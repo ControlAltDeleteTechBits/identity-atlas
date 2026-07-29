@@ -49,7 +49,7 @@ The synthetic data is generated only for automated testing. It is not included a
 4. An account that can consent to or use the documented delegated read permissions.
 5. Local storage suitable for sensitive administrative evidence.
 
-Node.js and Pester are needed only for development and contribution testing.
+Node.js and Pester 5.7.1 are needed only for development and contribution testing.
 
 ## Install from a release
 

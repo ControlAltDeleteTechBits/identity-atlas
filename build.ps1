@@ -16,6 +16,16 @@ $pesterResult = $null
 if (-not $SkipTests) {
     & (Join-Path $projectRoot 'tools/Test-IdentityAtlasRelease.ps1') -Path $projectRoot | Out-Null
 
+    $pester = Get-Module -ListAvailable Pester |
+        Where-Object { $_.Version -ge [version] '5.5.0' -and $_.Version -lt [version] '6.0.0' } |
+        Sort-Object Version -Descending |
+        Select-Object -First 1
+    if (-not $pester) {
+        throw 'Pester 5.5.0 or later in the 5.x series is required to run the PowerShell test suite.'
+    }
+
+    Import-Module $pester.Path -Force
+
     $scriptAnalyzer = Get-Module -ListAvailable PSScriptAnalyzer |
         Sort-Object Version -Descending |
         Select-Object -First 1
@@ -31,18 +41,7 @@ if (-not $SkipTests) {
         Write-Warning 'PSScriptAnalyzer is not installed, so static PowerShell analysis was skipped.'
     }
 
-    $pester = Get-Module -ListAvailable Pester | Sort-Object Version -Descending | Select-Object -First 1
-    if (-not $pester) {
-        throw 'Pester is required to run the PowerShell test suite.'
-    }
-
-    Import-Module $pester.Path -Force
-    if ($pester.Version.Major -ge 5) {
-        $pesterResult = Invoke-Pester -Path (Join-Path $projectRoot 'Tests') -PassThru
-    }
-    else {
-        $pesterResult = Invoke-Pester -Script (Join-Path $projectRoot 'Tests') -PassThru
-    }
+    $pesterResult = Invoke-Pester -Path (Join-Path $projectRoot 'Tests') -PassThru
     if ($pesterResult.FailedCount -gt 0) {
         throw "$($pesterResult.FailedCount) Pester test or tests failed."
     }

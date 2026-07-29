@@ -1,39 +1,42 @@
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$modulePath = Join-Path $projectRoot 'IdentityAtlas.psd1'
-$fixturePath = Join-Path $PSScriptRoot 'Fixtures/Get-AtlasTestData.ps1'
-$script:identityAtlasModule = Import-Module $modulePath -Force -PassThru
-
-function New-IdentityAtlasTestReport {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-        'PSUseShouldProcessForStateChangingFunctions',
-        '',
-        Justification = 'Writes only to the Pester TestDrive or a deliberately rejected source-path test.'
-    )]
-    param(
-        [Parameter(Mandatory)]
-        [string] $OutputPath
-    )
-
-    & $script:identityAtlasModule {
-        param($TestFixturePath, $TestOutputPath)
-
-        . $TestFixturePath
-        $fixture = Get-AtlasTestData
-        $report = New-AtlasReport -TenantId $fixture.TenantId -TenantDisplayName $fixture.TenantDisplayName -Collection $fixture.Collection -Collectors $fixture.Collectors -DataOrigin SampleFixture
-        $indexFile = Write-AtlasReport -Report $report -OutputPath $TestOutputPath
-        [pscustomobject] @{
-            OutputPath = $indexFile.DirectoryName
-            IndexPath = $indexFile.FullName
-            NodeCount = $report.manifest.counts.nodes
-            EdgeCount = $report.manifest.counts.edges
-            EvidenceCount = $report.manifest.counts.evidence
-            CoverageStatus = $report.manifest.coverage.status
-        }
-    } $fixturePath $OutputPath
-}
+$discoveryProjectRoot = Split-Path -Parent $PSScriptRoot
+Import-Module (Join-Path $discoveryProjectRoot 'IdentityAtlas.psd1') -Force
 
 Describe 'Identity Atlas isolated test fixture' {
     BeforeAll {
+        $projectRoot = Split-Path -Parent $PSScriptRoot
+        $modulePath = Join-Path $projectRoot 'IdentityAtlas.psd1'
+        $fixturePath = Join-Path $PSScriptRoot 'Fixtures/Get-AtlasTestData.ps1'
+        $script:identityAtlasModule = Import-Module $modulePath -Force -PassThru
+
+        function New-IdentityAtlasTestReport {
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                'PSUseShouldProcessForStateChangingFunctions',
+                '',
+                Justification = 'Writes only to the Pester TestDrive or a deliberately rejected source-path test.'
+            )]
+            param(
+                [Parameter(Mandatory)]
+                [string] $OutputPath
+            )
+
+            & $script:identityAtlasModule {
+                param($TestFixturePath, $TestOutputPath)
+
+                . $TestFixturePath
+                $fixture = Get-AtlasTestData
+                $report = New-AtlasReport -TenantId $fixture.TenantId -TenantDisplayName $fixture.TenantDisplayName -Collection $fixture.Collection -Collectors $fixture.Collectors -DataOrigin SampleFixture
+                $indexFile = Write-AtlasReport -Report $report -OutputPath $TestOutputPath
+                [pscustomobject] @{
+                    OutputPath = $indexFile.DirectoryName
+                    IndexPath = $indexFile.FullName
+                    NodeCount = $report.manifest.counts.nodes
+                    EdgeCount = $report.manifest.counts.edges
+                    EvidenceCount = $report.manifest.counts.evidence
+                    CoverageStatus = $report.manifest.coverage.status
+                }
+            } $fixturePath $OutputPath
+        }
+
         $script:reportPath = Join-Path $TestDrive 'SampleReport'
         $script:result = New-IdentityAtlasTestReport -OutputPath $script:reportPath
         $script:report = Get-Content -Raw -LiteralPath (Join-Path $script:reportPath 'data/report.json') |
@@ -42,42 +45,42 @@ Describe 'Identity Atlas isolated test fixture' {
 
     It 'exports the four public commands' {
         $commands = Get-Command -Module IdentityAtlas | Select-Object -ExpandProperty Name
-        $commands.Count | Should Be 4
-        ($commands -contains 'Connect-IdentityAtlas') | Should Be $true
-        ($commands -contains 'Invoke-IdentityAtlas') | Should Be $true
-        ($commands -contains 'Export-IdentityAtlas') | Should Be $true
-        ($commands -contains 'Compare-IdentityAtlas') | Should Be $true
-        (Get-Command Invoke-IdentityAtlas).Parameters.ContainsKey('SampleData') | Should Be $false
+        $commands.Count | Should -Be 4
+        ($commands -contains 'Connect-IdentityAtlas') | Should -Be $true
+        ($commands -contains 'Invoke-IdentityAtlas') | Should -Be $true
+        ($commands -contains 'Export-IdentityAtlas') | Should -Be $true
+        ($commands -contains 'Compare-IdentityAtlas') | Should -Be $true
+        (Get-Command Invoke-IdentityAtlas).Parameters.ContainsKey('SampleData') | Should -Be $false
     }
 
     It 'creates a complete offline report package' {
-        Test-Path -LiteralPath (Join-Path $script:reportPath 'index.html') | Should Be $true
-        Test-Path -LiteralPath (Join-Path $script:reportPath 'assets/app.js') | Should Be $true
-        Test-Path -LiteralPath (Join-Path $script:reportPath 'data/nodes-0001.js') | Should Be $true
-        Test-Path -LiteralPath (Join-Path $script:reportPath '.identity-atlas-report.json') | Should Be $true
-        $script:result.CoverageStatus | Should Be 'complete'
+        Test-Path -LiteralPath (Join-Path $script:reportPath 'index.html') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $script:reportPath 'assets/app.js') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $script:reportPath 'data/nodes-0001.js') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $script:reportPath '.identity-atlas-report.json') | Should -Be $true
+        $script:result.CoverageStatus | Should -Be 'complete'
     }
 
     It 'records read-only security metadata without serialising tokens' {
-        $script:report.manifest.schemaVersion | Should Be '1.1.0'
-        $script:report.manifest.reportVersion | Should Be '0.14.0'
-        $script:report.manifest.security.readOnlyCollection | Should Be $true
-        $script:report.manifest.security.tokenDataSerialized | Should Be $false
-        $script:report.manifest.security.browserNetworkAccess | Should Be 'disabled'
-        $script:report.manifest.security.localServerBinding | Should Be 'loopbackOnly'
-        $script:report.manifest.security.containsTenantData | Should Be $false
+        $script:report.manifest.schemaVersion | Should -Be '1.1.0'
+        $script:report.manifest.reportVersion | Should -Be '0.14.0'
+        $script:report.manifest.security.readOnlyCollection | Should -Be $true
+        $script:report.manifest.security.tokenDataSerialized | Should -Be $false
+        $script:report.manifest.security.browserNetworkAccess | Should -Be 'disabled'
+        $script:report.manifest.security.localServerBinding | Should -Be 'loopbackOnly'
+        $script:report.manifest.security.containsTenantData | Should -Be $false
 
         $reportText = Get-Content -LiteralPath (Join-Path $script:reportPath 'data/report.json') -Raw
-        $reportText | Should Not Match '(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+'
-        $reportText | Should Not Match '(?i)"(access_token|client_secret|secretText|password)"\s*:'
+        $reportText | Should -Not -Match '(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+'
+        $reportText | Should -Not -Match '(?i)"(access_token|client_secret|secretText|password)"\s*:'
     }
 
     It 'uses a restrictive offline content security policy' {
         $indexText = Get-Content -LiteralPath (Join-Path $script:reportPath 'index.html') -Raw
-        $indexText | Should Match "default-src 'none'"
-        $indexText | Should Match "connect-src 'none'"
-        $indexText | Should Match "script-src 'self'"
-        $indexText | Should Match 'name="referrer" content="no-referrer"'
+        $indexText | Should -Match "default-src 'none'"
+        $indexText | Should -Match "connect-src 'none'"
+        $indexText | Should -Match "script-src 'self'"
+        $indexText | Should -Match 'name="referrer" content="no-referrer"'
     }
 
     It 'uses the Identity Atlas brand throughout the distributable browser package' {
@@ -86,24 +89,24 @@ Describe 'Identity Atlas isolated test fixture' {
         $runtimeText = Get-Content -LiteralPath (Join-Path $script:reportPath 'assets/data-runtime.js') -Raw
         $manifestText = Get-Content -LiteralPath (Join-Path $script:reportPath 'data/manifest.js') -Raw
 
-        $indexText | Should Match '<title>Identity Atlas</title>'
-        $indexText | Should Match 'identity-atlas-logo\.svg'
-        $appText | Should Match 'IdentityAtlasData'
-        $runtimeText | Should Match 'IdentityAtlasData'
-        $manifestText | Should Match '^window\.IdentityAtlasData\.registerManifest'
-        "$indexText`n$appText`n$runtimeText`n$manifestText" | Should Not Match '(?i)entra[ -]?atlas'
+        $indexText | Should -Match '<title>Identity Atlas</title>'
+        $indexText | Should -Match 'identity-atlas-logo\.svg'
+        $appText | Should -Match 'IdentityAtlasData'
+        $runtimeText | Should -Match 'IdentityAtlasData'
+        $manifestText | Should -Match '^window\.IdentityAtlasData\.registerManifest'
+        "$indexText`n$appText`n$runtimeText`n$manifestText" | Should -Not -Match '(?i)entra[ -]?atlas'
     }
 
     It 'reads Settings security guidance from the report manifest' {
         $appText = Get-Content -LiteralPath (Join-Path $script:reportPath 'assets/app.js') -Raw
-        $appText | Should Match 'report\.manifest\.security'
-        $appText | Should Not Match '(?<!report\.)\bmanifest\.security'
+        $appText | Should -Match 'report\.manifest\.security'
+        $appText | Should -Not -Match '(?<!report\.)\bmanifest\.security'
     }
 
     It 'contains the expected fixture counts' {
-        $script:result.NodeCount | Should Be 16
-        $script:result.EdgeCount | Should Be 21
-        $script:result.EvidenceCount | Should Be 21
+        $script:result.NodeCount | Should -Be 16
+        $script:result.EdgeCount | Should -Be 21
+        $script:result.EvidenceCount | Should -Be 21
     }
 
     It 'keeps every edge endpoint resolvable' {
@@ -116,7 +119,7 @@ Describe 'Identity Atlas isolated test fixture' {
             $script:report.edges |
                 Where-Object { -not $nodeKeys.ContainsKey($_.From) -or -not $nodeKeys.ContainsKey($_.To) }
         )
-        $unresolved.Count | Should Be 0
+        $unresolved.Count | Should -Be 0
     }
 
     It 'keeps evidence references resolvable' {
@@ -134,7 +137,7 @@ Describe 'Identity Atlas isolated test fixture' {
                 }
             }
         )
-        $missing.Count | Should Be 0
+        $missing.Count | Should -Be 0
     }
 
     It 'contains the group-based Global Administrator fixture path' {
@@ -148,8 +151,8 @@ Describe 'Identity Atlas isolated test fixture' {
             $_.From -eq $group.Key -and $_.To -eq $role.Key -and $_.Relationship -eq 'assignedRole'
         }
 
-        @($membership).Count | Should Be 1
-        @($assignment).Count | Should Be 1
+        @($membership).Count | Should -Be 1
+        @($assignment).Count | Should -Be 1
     }
 
     It 'contains the direct application app role fixture path' {
@@ -159,8 +162,8 @@ Describe 'Identity Atlas isolated test fixture' {
             $_.From -eq $mark.Key -and $_.To -eq $app.Key -and $_.Relationship -eq 'assignedAppRole'
         }
 
-        @($assignment).Count | Should Be 1
-        $assignment.State.appRoleDisplayName | Should Be 'Finance.Reader'
+        @($assignment).Count | Should -Be 1
+        $assignment.State.appRoleDisplayName | Should -Be 'Finance.Reader'
     }
 
     It 'contains the Conditional Access policy fixture relationships' {
@@ -174,9 +177,9 @@ Describe 'Identity Atlas isolated test fixture' {
             $_.From -eq $app.Key -and $_.To -eq $policy.Key -and $_.Relationship -eq 'conditionalAccessIncludes'
         }
 
-        @($userInclusion).Count | Should Be 1
-        @($appInclusion).Count | Should Be 1
-        $policy.Properties.state | Should Be 'enabled'
+        @($userInclusion).Count | Should -Be 1
+        @($appInclusion).Count | Should -Be 1
+        $policy.Properties.state | Should -Be 'enabled'
     }
 
     It 'contains application ownership, credential and permission fixture relationships' {
@@ -187,13 +190,13 @@ Describe 'Identity Atlas isolated test fixture' {
 
         @($script:report.edges | Where-Object {
             $_.From -eq $app.Key -and $_.To -eq $mark.Key -and $_.Relationship -eq 'ownedBy'
-        }).Count | Should Be 1
+        }).Count | Should -Be 1
         @($script:report.edges | Where-Object {
             $_.From -eq $app.Key -and $_.To -eq $credential.Key -and $_.Relationship -eq 'hasCredential'
-        }).Count | Should Be 1
+        }).Count | Should -Be 1
         @($script:report.edges | Where-Object {
             $_.From -eq $app.Key -and $_.To -eq $permission.Key -and $_.Relationship -eq 'requiresApiPermission'
-        }).Count | Should Be 1
+        }).Count | Should -Be 1
     }
 
     It 'contains device and authentication method fixture relationships' {
@@ -203,10 +206,10 @@ Describe 'Identity Atlas isolated test fixture' {
 
         @($script:report.edges | Where-Object {
             $_.From -eq $mark.Key -and $_.To -eq $device.Key -and $_.Relationship -eq 'registeredDevice'
-        }).Count | Should Be 1
+        }).Count | Should -Be 1
         @($script:report.edges | Where-Object {
             $_.From -eq $mark.Key -and $_.To -eq $method.Key -and $_.Relationship -eq 'hasAuthenticationMethod'
-        }).Count | Should Be 1
+        }).Count | Should -Be 1
     }
 
     It 'contains Conditional Access reference fixture relationships' {
@@ -216,10 +219,10 @@ Describe 'Identity Atlas isolated test fixture' {
 
         @($script:report.edges | Where-Object {
             $_.From -eq $policy.Key -and $_.To -eq $location.Key -and $_.Relationship -eq 'conditionalAccessIncludesLocation'
-        }).Count | Should Be 1
+        }).Count | Should -Be 1
         @($script:report.edges | Where-Object {
             $_.From -eq $policy.Key -and $_.To -eq $strength.Key -and $_.Relationship -eq 'requiresAuthenticationStrength'
-        }).Count | Should Be 1
+        }).Count | Should -Be 1
     }
 
     It 'contains the eligible Global Administrator fixture path' {
@@ -229,26 +232,26 @@ Describe 'Identity Atlas isolated test fixture' {
             $_.From -eq $alex.Key -and $_.To -eq $role.Key -and $_.Relationship -eq 'eligibleRole'
         }
 
-        @($eligibility).Count | Should Be 1
-        $eligibility.State.activation | Should Be 'eligible'
+        @($eligibility).Count | Should -Be 1
+        $eligibility.State.activation | Should -Be 'eligible'
     }
 
     It 'conforms to the versioned JSON schemas' {
         $schemaRoot = Join-Path $projectRoot 'Schema'
         (($script:report.manifest | ConvertTo-Json -Depth 30) |
-            Test-Json -SchemaFile (Join-Path $schemaRoot 'atlas-manifest.schema.json')) | Should Be $true
+            Test-Json -SchemaFile (Join-Path $schemaRoot 'atlas-manifest.schema.json')) | Should -Be $true
 
         foreach ($node in $script:report.nodes) {
             (($node | ConvertTo-Json -Depth 30) |
-                Test-Json -SchemaFile (Join-Path $schemaRoot 'atlas-node.schema.json')) | Should Be $true
+                Test-Json -SchemaFile (Join-Path $schemaRoot 'atlas-node.schema.json')) | Should -Be $true
         }
         foreach ($edge in $script:report.edges) {
             (($edge | ConvertTo-Json -Depth 30) |
-                Test-Json -SchemaFile (Join-Path $schemaRoot 'atlas-edge.schema.json')) | Should Be $true
+                Test-Json -SchemaFile (Join-Path $schemaRoot 'atlas-edge.schema.json')) | Should -Be $true
         }
         foreach ($evidence in $script:report.evidence) {
             (($evidence | ConvertTo-Json -Depth 30) |
-                Test-Json -SchemaFile (Join-Path $schemaRoot 'atlas-evidence.schema.json')) | Should Be $true
+                Test-Json -SchemaFile (Join-Path $schemaRoot 'atlas-evidence.schema.json')) | Should -Be $true
         }
     }
 
@@ -258,10 +261,10 @@ Describe 'Identity Atlas isolated test fixture' {
         Export-IdentityAtlas -InputObject $script:report -OutputPath (Join-Path $exportRoot 'Csv') -Format Csv | Out-Null
         Export-IdentityAtlas -InputObject $script:report -OutputPath (Join-Path $exportRoot 'Markdown') -Format Markdown | Out-Null
 
-        Test-Path -LiteralPath (Join-Path $exportRoot 'Json/report.json') | Should Be $true
-        Test-Path -LiteralPath (Join-Path $exportRoot 'Csv/nodes.csv') | Should Be $true
-        Test-Path -LiteralPath (Join-Path $exportRoot 'Csv/edges.csv') | Should Be $true
-        Test-Path -LiteralPath (Join-Path $exportRoot 'Markdown/report-summary.md') | Should Be $true
+        Test-Path -LiteralPath (Join-Path $exportRoot 'Json/report.json') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $exportRoot 'Csv/nodes.csv') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $exportRoot 'Csv/edges.csv') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $exportRoot 'Markdown/report-summary.md') | Should -Be $true
     }
 
     It 'compares reports and writes JSON plus Markdown output' {
@@ -287,12 +290,12 @@ Describe 'Identity Atlas isolated test fixture' {
         $comparisonPath = Join-Path $TestDrive 'Comparison'
         $comparison = Compare-IdentityAtlas -ReferenceReportPath $referencePath -DifferenceReportPath $differencePath -OutputPath $comparisonPath
 
-        $comparison.summary.removedNodes | Should Be 1
-        $comparison.summary.changedNodes | Should Be 1
-        $comparison.summary.removedEdges | Should Be 1
-        Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.json') | Should Be $true
-        Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.md') | Should Be $true
-        Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.html') | Should Be $true
+        $comparison.summary.removedNodes | Should -Be 1
+        $comparison.summary.changedNodes | Should -Be 1
+        $comparison.summary.removedEdges | Should -Be 1
+        Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.json') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.md') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.html') | Should -Be $true
     }
 
     It 'refuses to write a report into a project source directory' {
@@ -304,8 +307,8 @@ Describe 'Identity Atlas isolated test fixture' {
         catch {
             $threw = $true
         }
-        $threw | Should Be $true
-        Test-Path -LiteralPath $unsafePath | Should Be $false
+        $threw | Should -Be $true
+        Test-Path -LiteralPath $unsafePath | Should -Be $false
     }
 
     InModuleScope IdentityAtlas {
@@ -321,8 +324,8 @@ Describe 'Identity Atlas isolated test fixture' {
                 'RoleManagement.Read.Directory'
             )
 
-            $assessment.status | Should Be 'complete'
-            $assessment.missingRequirements.Count | Should Be 0
+            $assessment.status | Should -Be 'complete'
+            $assessment.missingRequirements.Count | Should -Be 0
         }
 
         It 'accepts documented higher privilege alternatives without requesting them by default' {
@@ -333,16 +336,16 @@ Describe 'Identity Atlas isolated test fixture' {
                 'RoleManagement.Read.Directory'
             )
 
-            $assessment.status | Should Be 'complete'
-            $assessment.missingRequirements.Count | Should Be 0
+            $assessment.status | Should -Be 'complete'
+            $assessment.missingRequirements.Count | Should -Be 0
         }
 
         It 'marks missing delegated scope coverage as partial' {
             $assessment = Get-AtlasPermissionAssessment -ContextScope @('User.Read.All')
 
-            $assessment.status | Should Be 'partial'
-            (@($assessment.missingRequirements.recommended) -contains 'Application.Read.All') | Should Be $true
-            (@($assessment.missingRequirements.recommended) -contains 'Policy.Read.All') | Should Be $true
+            $assessment.status | Should -Be 'partial'
+            (@($assessment.missingRequirements.recommended) -contains 'Application.Read.All') | Should -Be $true
+            (@($assessment.missingRequirements.recommended) -contains 'Policy.Read.All') | Should -Be $true
         }
 
         It 'redacts authentication material from collector errors' {
@@ -353,10 +356,10 @@ Describe 'Identity Atlas isolated test fixture' {
                 $safeDetail = Get-AtlasSafeErrorDetail -ErrorRecord $_
             }
 
-            $safeDetail | Should Not Match 'eyJhbGci'
-            $safeDetail | Should Not Match 'topsecret'
-            $safeDetail | Should Not Match 'abc123'
-            $safeDetail | Should Match '\[redacted\]'
+            $safeDetail | Should -Not -Match 'eyJhbGci'
+            $safeDetail | Should -Not -Match 'topsecret'
+            $safeDetail | Should -Not -Match 'abc123'
+            $safeDetail | Should -Match '\[redacted\]'
         }
 
         It 'keeps a failed top-level collector as partial coverage' {
@@ -364,19 +367,19 @@ Describe 'Identity Atlas isolated test fixture' {
                 throw 'Bearer unsafe-token'
             }
 
-            $collector.Status | Should Be 'partial'
-            $collector.Warnings.Count | Should Be 1
-            $collector.Warnings[0] | Should Not Match 'unsafe-token'
-            $collector.Metrics.failed | Should Be $true
+            $collector.Status | Should -Be 'partial'
+            $collector.Warnings.Count | Should -Be 1
+            $collector.Warnings[0] | Should -Not -Match 'unsafe-token'
+            $collector.Metrics.failed | Should -Be $true
         }
 
         It 'allows only recognised Microsoft Graph request hosts and API paths' {
-            (Test-AtlasGraphUri -Uri '/v1.0/users') | Should Be $true
-            (Test-AtlasGraphUri -Uri 'https://graph.microsoft.com/v1.0/users?$top=1') | Should Be $true
-            (Test-AtlasGraphUri -Uri 'https://graph.microsoft.us/v1.0/groups') | Should Be $true
-            (Test-AtlasGraphUri -Uri 'https://example.com/v1.0/users') | Should Be $false
-            (Test-AtlasGraphUri -Uri 'http://graph.microsoft.com/v1.0/users') | Should Be $false
-            (Test-AtlasGraphUri -Uri '/me') | Should Be $false
+            (Test-AtlasGraphUri -Uri '/v1.0/users') | Should -Be $true
+            (Test-AtlasGraphUri -Uri 'https://graph.microsoft.com/v1.0/users?$top=1') | Should -Be $true
+            (Test-AtlasGraphUri -Uri 'https://graph.microsoft.us/v1.0/groups') | Should -Be $true
+            (Test-AtlasGraphUri -Uri 'https://example.com/v1.0/users') | Should -Be $false
+            (Test-AtlasGraphUri -Uri 'http://graph.microsoft.com/v1.0/users') | Should -Be $false
+            (Test-AtlasGraphUri -Uri '/me') | Should -Be $false
         }
 
         It 'rejects an unrecognised Graph request URI before making a request' {
@@ -391,7 +394,7 @@ Describe 'Identity Atlas isolated test fixture' {
             catch {
                 $threw = $true
             }
-            $threw | Should Be $true
+            $threw | Should -Be $true
             Assert-MockCalled Invoke-MgGraphRequest -Times 0
         }
 
@@ -405,8 +408,8 @@ Describe 'Identity Atlas isolated test fixture' {
 
             $response = Invoke-AtlasGraphRequest -Uri '/v1.0/groups'
 
-            $response.Items.Count | Should Be 0
-            $response.Metrics.itemCount | Should Be 0
+            $response.Items.Count | Should -Be 0
+            $response.Metrics.itemCount | Should -Be 0
         }
 
         It 'collects a directory role assignment without appScopeId' {
@@ -451,9 +454,9 @@ Describe 'Identity Atlas isolated test fixture' {
             $knownNode = New-AtlasNode -TenantId 'tenant-1' -Id 'user-1' -Kind 'user' -DisplayName 'Test user'
             $result = Get-AtlasDirectoryRole -TenantId 'tenant-1' -KnownNode @($knownNode)
 
-            $result.Edges.Count | Should Be 1
-            $result.Evidence.Count | Should Be 1
-            $result.Edges[0].State.appScopeId | Should Be $null
+            $result.Edges.Count | Should -Be 1
+            $result.Evidence.Count | Should -Be 1
+            $result.Edges[0].State.appScopeId | Should -Be $null
         }
 
         It 'collects application app role assignments' {
@@ -510,10 +513,10 @@ Describe 'Identity Atlas isolated test fixture' {
             $knownNode = New-AtlasNode -TenantId 'tenant-1' -Id 'user-1' -Kind 'user' -DisplayName 'Test user'
             $result = Get-AtlasApplication -TenantId 'tenant-1' -KnownNode @($knownNode)
 
-            $result.Nodes.Count | Should Be 1
-            $result.Edges.Count | Should Be 1
-            $result.Edges[0].Relationship | Should Be 'assignedAppRole'
-            $result.Edges[0].State.appRoleDisplayName | Should Be 'Read data'
+            $result.Nodes.Count | Should -Be 1
+            $result.Edges.Count | Should -Be 1
+            $result.Edges[0].Relationship | Should -Be 'assignedAppRole'
+            $result.Edges[0].State.appRoleDisplayName | Should -Be 'Read data'
         }
 
         It 'collects a single application credential and API permission without scalar count errors' {
@@ -568,14 +571,14 @@ Describe 'Identity Atlas isolated test fixture' {
             $result = Get-AtlasApplication -TenantId 'tenant-1' -KnownNode @($knownNode)
             $application = $result.Nodes | Where-Object Kind -eq 'application'
 
-            @($application).Count | Should Be 1
-            $application.Properties.passwordCredentialCount | Should Be 1
-            $application.Properties.keyCredentialCount | Should Be 0
-            $application.Properties.requiredResourceAccessCount | Should Be 1
-            @($result.Nodes | Where-Object Kind -eq 'applicationCredential').Count | Should Be 1
-            @($result.Nodes | Where-Object Kind -eq 'apiPermission').Count | Should Be 1
-            @($result.Edges | Where-Object Relationship -eq 'hasCredential').Count | Should Be 1
-            @($result.Edges | Where-Object Relationship -eq 'requiresApiPermission').Count | Should Be 1
+            @($application).Count | Should -Be 1
+            $application.Properties.passwordCredentialCount | Should -Be 1
+            $application.Properties.keyCredentialCount | Should -Be 0
+            $application.Properties.requiredResourceAccessCount | Should -Be 1
+            @($result.Nodes | Where-Object Kind -eq 'applicationCredential').Count | Should -Be 1
+            @($result.Nodes | Where-Object Kind -eq 'apiPermission').Count | Should -Be 1
+            @($result.Edges | Where-Object Relationship -eq 'hasCredential').Count | Should -Be 1
+            @($result.Edges | Where-Object Relationship -eq 'requiresApiPermission').Count | Should -Be 1
         }
 
         It 'collects Conditional Access policy assignment relationships' {
@@ -618,10 +621,10 @@ Describe 'Identity Atlas isolated test fixture' {
             )
             $result = Get-AtlasConditionalAccessPolicy -TenantId 'tenant-1' -KnownNode $knownNode
 
-            $result.Nodes.Count | Should Be 1
-            $result.Edges.Count | Should Be 3
-            @($result.Edges | Where-Object Relationship -eq 'conditionalAccessIncludes').Count | Should Be 2
-            @($result.Edges | Where-Object Relationship -eq 'conditionalAccessExcludes').Count | Should Be 1
+            $result.Nodes.Count | Should -Be 1
+            $result.Edges.Count | Should -Be 3
+            @($result.Edges | Where-Object Relationship -eq 'conditionalAccessIncludes').Count | Should -Be 2
+            @($result.Edges | Where-Object Relationship -eq 'conditionalAccessExcludes').Count | Should -Be 1
         }
 
         It 'collects devices and user authentication methods' {
@@ -669,10 +672,10 @@ Describe 'Identity Atlas isolated test fixture' {
             $knownNode = New-AtlasNode -TenantId 'tenant-1' -Id 'user-1' -Kind 'user' -DisplayName 'Test user'
             $result = Get-AtlasDeviceAndAuthentication -TenantId 'tenant-1' -KnownNode @($knownNode)
 
-            @($result.Nodes | Where-Object Kind -eq 'device').Count | Should Be 1
-            @($result.Nodes | Where-Object Kind -eq 'authenticationMethod').Count | Should Be 1
-            @($result.Edges | Where-Object Relationship -eq 'registeredDevice').Count | Should Be 1
-            @($result.Edges | Where-Object Relationship -eq 'hasAuthenticationMethod').Count | Should Be 1
+            @($result.Nodes | Where-Object Kind -eq 'device').Count | Should -Be 1
+            @($result.Nodes | Where-Object Kind -eq 'authenticationMethod').Count | Should -Be 1
+            @($result.Edges | Where-Object Relationship -eq 'registeredDevice').Count | Should -Be 1
+            @($result.Edges | Where-Object Relationship -eq 'hasAuthenticationMethod').Count | Should -Be 1
         }
 
         It 'collects Conditional Access named location and authentication strength references' {
@@ -740,10 +743,10 @@ Describe 'Identity Atlas isolated test fixture' {
             )
             $result = Get-AtlasConditionalAccessReference -TenantId 'tenant-1' -KnownNode $knownNode
 
-            @($result.Nodes | Where-Object Kind -eq 'namedLocation').Count | Should Be 1
-            @($result.Nodes | Where-Object Kind -eq 'authenticationStrength').Count | Should Be 1
-            @($result.Edges | Where-Object Relationship -eq 'conditionalAccessIncludesLocation').Count | Should Be 1
-            @($result.Edges | Where-Object Relationship -eq 'requiresAuthenticationStrength').Count | Should Be 1
+            @($result.Nodes | Where-Object Kind -eq 'namedLocation').Count | Should -Be 1
+            @($result.Nodes | Where-Object Kind -eq 'authenticationStrength').Count | Should -Be 1
+            @($result.Edges | Where-Object Relationship -eq 'conditionalAccessIncludesLocation').Count | Should -Be 1
+            @($result.Edges | Where-Object Relationship -eq 'requiresAuthenticationStrength').Count | Should -Be 1
         }
     }
 }
