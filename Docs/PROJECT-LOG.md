@@ -451,6 +451,32 @@ Repository visibility: private
 
 The repository has not been made public, tagged or released. Live tenant output remains local and ignored.
 
+## Private launch rehearsal
+
+Completed on 29 July 2026 against commit `50c8ed52220d4648c857d295a6371c3e35646f3e`:
+
+1. Reviewed the README, MIT licence, security policy, support guide, contribution guide, community conduct, change log and third-party notices.
+2. Built a fresh `v0.14.0-preview.1` release candidate.
+3. Confirmed 41 PowerShell tests and 8 JavaScript tests passed.
+4. Confirmed the source safety scan and all six commits reported zero findings.
+5. Verified the release ZIP checksum.
+6. Confirmed the 66-entry archive contains no tenant report, `Output`, `Release`, `Tests`, `work`, attachment or local tool data.
+7. Extracted the archive into an ignored clean review folder.
+8. Validated and imported the extracted module in a fresh PowerShell process.
+9. Confirmed the four intended commands are exported.
+10. Served the existing live development-tenant report with the extracted local server.
+11. Confirmed GET and HEAD returned 200, POST returned 405 and the expected browser security headers were present.
+12. Stopped the temporary test server.
+13. Corrected the publication checklist order so public visibility and enforced branch protection precede creation of the immutable release tag.
+
+Release candidate SHA256:
+
+```text
+0F6666B7C6A3A51B834C18355CC870FDDC823C04D70236152F39B48FDB0C09DC
+```
+
+The repository remains private. No tag or release was created.
+
 ## Next recommended task
 
-Review the first-release checklist and obtain explicit approval before changing visibility or publishing `v0.14.0-preview.1`. Add an enforced `main` branch ruleset after the repository becomes public because GitHub Free does not enforce rulesets on private organisation repositories.
+Obtain the remaining owner confirmations recorded in the first-release checklist, generate one final live tenant report from the extracted module and obtain explicit approval before changing repository visibility. After changing visibility, enforce the `main` ruleset before creating the immutable `v0.14.0-preview.1` tag.

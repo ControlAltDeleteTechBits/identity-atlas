@@ -8,63 +8,74 @@ Lead maintainer: Mark Oldham
 
 Complete every required item before making the repository public.
 
+Private launch rehearsal completed against commit `50c8ed52220d4648c857d295a6371c3e35646f3e`.
+
+Current release candidate SHA256:
+
+```text
+0F6666B7C6A3A51B834C18355CC870FDDC823C04D70236152F39B48FDB0C09DC
+```
+
+Checked items have technical or repository evidence. Owner confirmations and public publication actions remain unchecked.
+
 ## 1. Ownership and licence
 
 - [ ] Confirm the legal owner named in the copyright notice.
 - [ ] Confirm the MIT Licence is approved for Identity Atlas.
-- [ ] Confirm `IdentityAtlas.psd1` names Mark Oldham as author.
-- [ ] Confirm `IdentityAtlas.psd1` names Control Alt Delete Tech Bits as company.
-- [ ] Confirm the repository is owned by the Control Alt Delete Tech Bits GitHub organisation.
-- [ ] Confirm the project states that it is an independent community project.
+- [x] Confirm `IdentityAtlas.psd1` names Mark Oldham as author.
+- [x] Confirm `IdentityAtlas.psd1` names Control Alt Delete Tech Bits as company.
+- [x] Confirm the repository is owned by the Control Alt Delete Tech Bits GitHub organisation.
+- [x] Confirm the project states that it is an independent community project.
 
 ## 2. GitHub account security
 
-- [ ] Verify the maintainer’s email address.
-- [ ] Enable two-factor authentication.
+- [x] Verify the maintainer’s email address.
+- [x] Enable two-factor authentication.
 - [ ] Store recovery codes in a password manager.
 - [ ] Add a second recovery method.
-- [ ] Check that the organisation has no unknown members or applications.
+- [x] Check that the organisation has no unknown members or applications.
 
 ## 3. Source safety
 
-- [ ] Run `.\tools\Test-IdentityAtlasRelease.ps1`.
-- [ ] Confirm the scan reports zero findings.
-- [ ] Confirm `Output` is ignored by Git.
-- [ ] Confirm `Release` is ignored by Git.
-- [ ] Confirm no generated report is staged.
-- [ ] Confirm no access token, secret, certificate or authentication context is staged.
-- [ ] Confirm no local user path is staged.
-- [ ] Confirm no live tenant identifier, email address or object identifier is staged.
-- [ ] Confirm no confidential screenshot is staged.
-- [ ] Review the complete first commit before pushing.
+- [x] Run `.\tools\Test-IdentityAtlasRelease.ps1`.
+- [x] Confirm the scan reports zero findings.
+- [x] Confirm `Output` is ignored by Git.
+- [x] Confirm `Release` is ignored by Git.
+- [x] Confirm no generated report is staged.
+- [x] Confirm no access token, secret, certificate or authentication context is staged.
+- [x] Confirm no local user path is staged.
+- [x] Confirm no live tenant identifier, email address or object identifier is staged.
+- [x] Confirm no confidential screenshot is staged.
+- [x] Review the complete Git history before publication.
 
 ## 4. Product validation
 
-- [ ] Run `.\build.ps1` with a valid Node.js path.
-- [ ] Confirm every Pester test passes.
-- [ ] Confirm every JavaScript test passes.
-- [ ] Confirm PSScriptAnalyzer reports zero errors or warnings.
-- [ ] Import the module from a clean folder.
-- [ ] Connect with delegated read permissions.
-- [ ] Generate a new development-tenant report.
-- [ ] Confirm Applications, Roles, Policies, Insights, Timeline and Access explorer load.
-- [ ] Confirm Settings opens.
-- [ ] Confirm graph navigation and breadcrumbs work.
-- [ ] Confirm SVG and PNG export work.
-- [ ] Confirm there are no browser console errors.
-- [ ] Disconnect Microsoft Graph after testing.
+- [x] Run `.\build.ps1` with a valid Node.js path.
+- [x] Confirm every Pester test passes.
+- [x] Confirm every JavaScript test passes.
+- [x] Confirm PSScriptAnalyzer reports zero errors or warnings.
+- [x] Import the module from a clean folder.
+- [x] Connect with delegated read permissions.
+- [x] Generate a new development-tenant report.
+- [x] Confirm Applications, Roles, Policies, Insights, Timeline and Access explorer load.
+- [x] Confirm Settings opens.
+- [x] Confirm graph navigation and breadcrumbs work.
+- [x] Confirm SVG and PNG export work.
+- [x] Confirm there are no browser console errors.
+- [x] Disconnect Microsoft Graph after testing.
 
 ## 5. Release package
 
-- [ ] Run `.\tools\New-IdentityAtlasRelease.ps1`.
-- [ ] Confirm the ZIP name contains `v0.14.0-preview.1`.
-- [ ] Confirm the SHA256 file was generated.
-- [ ] Open the ZIP and inspect its contents.
-- [ ] Confirm the ZIP contains no `Output`, `Tests`, `Release` or generated report data.
-- [ ] Extract the ZIP into a clean folder.
-- [ ] Run `Test-ModuleManifest` against the extracted manifest.
-- [ ] Import the extracted module.
-- [ ] Generate and open a report from the extracted module.
+- [x] Run `.\tools\New-IdentityAtlasRelease.ps1`.
+- [x] Confirm the ZIP name contains `v0.14.0-preview.1`.
+- [x] Confirm the SHA256 file was generated and matches the ZIP.
+- [x] Open the ZIP and inspect its contents.
+- [x] Confirm the ZIP contains no `Output`, `Tests`, `Release` or generated report data.
+- [x] Extract the ZIP into a clean folder.
+- [x] Run `Test-ModuleManifest` against the extracted manifest.
+- [x] Import the extracted module in a fresh PowerShell process.
+- [x] Serve a previously collected live tenant report with the extracted local server.
+- [ ] Generate a new live tenant report from the extracted module during the final publication session.
 
 ## 6. Private repository inspection
 
@@ -79,12 +90,14 @@ Complete every required item before making the repository public.
 ## 7. Public preview
 
 - [ ] Prepare release notes from `CHANGELOG.md`.
+- [ ] Obtain explicit approval to make the repository public.
+- [ ] Change repository visibility to public.
+- [ ] Create and verify the enforced `main` branch ruleset.
+- [ ] Recheck the public Actions history and repository files.
 - [ ] Create tag `v0.14.0-preview.1` from the tested commit.
 - [ ] Mark the release as a pre-release.
 - [ ] Attach the clean ZIP.
 - [ ] Attach the SHA256 file.
-- [ ] Change repository visibility to public.
-- [ ] Recheck the public Actions history and repository files.
 - [ ] Publish the pre-release.
 - [ ] Test the public download link in a signed-out browser session.
 
