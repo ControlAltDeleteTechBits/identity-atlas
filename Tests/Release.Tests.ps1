@@ -30,10 +30,10 @@ Describe 'Identity Atlas community release controls' {
     It 'excludes generated reports and release archives from Git' {
         $gitIgnore = Get-Content -LiteralPath (Join-Path $projectRoot '.gitignore') -Raw
 
-        $gitIgnore | Should Match '(?m)^Output/$'
-        $gitIgnore | Should Match '(?m)^Release/$'
-        $gitIgnore | Should Match '(?m)^\*\.zip$'
-        $gitIgnore | Should Match '(?m)^\*\.pfx$'
+        $gitIgnore | Should Match '(?m)^Output/\r?$'
+        $gitIgnore | Should Match '(?m)^Release/\r?$'
+        $gitIgnore | Should Match '(?m)^\*\.zip\r?$'
+        $gitIgnore | Should Match '(?m)^\*\.pfx\r?$'
     }
 
     It 'provides issue and pull request templates' {
