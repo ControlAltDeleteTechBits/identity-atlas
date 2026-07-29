@@ -413,9 +413,41 @@ The generated ZIP and checksum are stored under the ignored local `Release` dire
 Release candidate SHA256:
 
 ```text
-EA46206F9687D6FB668ECD5AEDEE955D93E38A809F1523DC7737037DCB097A0B
+0F6666B7C6A3A51B834C18355CC870FDDC823C04D70236152F39B48FDB0C09DC
 ```
+
+## Private GitHub preparation
+
+Completed on 29 July 2026:
+
+1. Created the `ControlAltDeleteTechBits` GitHub organisation on the GitHub Free plan.
+2. Created `ControlAltDeleteTechBits/identity-atlas` as a private repository.
+3. Added the confirmed repository address to the module manifest and README.
+4. Configured the repository-local Git identity as Mark Oldham using the Control Alt Delete Tech Bits support email.
+5. Verified that all commits are attributed to the `MarkCADTB` GitHub account with no additional contributor attribution.
+6. Confirmed that the default branch is `main`.
+7. Confirmed that the organisation has one member, no installed GitHub Apps and no additional repository collaborators or teams.
+8. Confirmed that `Output`, `Release`, tenant reports, archives, credentials and local paths are not tracked.
+9. Corrected the clean-clone line-ending test found during private inspection.
+10. Pinned CI validation to Pester 5.7.1 after GitHub installed an unsupported new major version.
+11. Added a GitHub funding link for Buy Me a Coffee.
+12. Completed a fresh private clone build against commit `fe91ca82bae90f5df21052764a4c8fb223dc058f`.
+13. Confirmed GitHub Actions validation run 4 completed successfully, including the source scan, PowerShell and JavaScript tests, static analysis and clean package build.
+
+Latest private-clone validation:
+
+```text
+PowerShell tests: 41 passed, 0 failed
+JavaScript tests: 8 passed, 0 failed
+PSScriptAnalyzer findings: 0
+Source safety findings: 0
+Unsafe tracked files: 0
+Default branch: main
+Repository visibility: private
+```
+
+The repository has not been made public, tagged or released. Live tenant output remains local and ignored.
 
 ## Next recommended task
 
-Create the GitHub personal account and Control Alt Delete Tech Bits organisation, initialise the local repository with Mark Oldham’s verified commit identity, publish it privately and complete `Docs/PRIVATE-REPOSITORY-INSPECTION.md`.
+Confirm the organisation two-factor authentication policy, add a protected `main` branch ruleset, review the first-release checklist and obtain explicit approval before changing visibility or publishing `v0.14.0-preview.1`.
