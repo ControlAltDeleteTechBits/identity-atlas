@@ -42,6 +42,8 @@ Describe 'Identity Atlas community release controls' {
         Test-Path -LiteralPath (Join-Path $script:projectRoot '.github/ISSUE_TEMPLATE/bug_report.yml') | Should -Be $true
         Test-Path -LiteralPath (Join-Path $script:projectRoot '.github/ISSUE_TEMPLATE/feature_request.yml') | Should -Be $true
         Test-Path -LiteralPath (Join-Path $script:projectRoot '.github/PULL_REQUEST_TEMPLATE.md') | Should -Be $true
+        $funding = Get-Content -LiteralPath (Join-Path $script:projectRoot '.github/FUNDING.yml') -Raw
+        $funding | Should -Match 'https://buymeacoffee\.com/cadtb'
     }
 
     It 'keeps the validation workflow read only' {
