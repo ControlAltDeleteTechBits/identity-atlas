@@ -432,7 +432,10 @@ Completed on 29 July 2026:
 10. Pinned CI validation to Pester 5.7.1 after GitHub installed an unsupported new major version.
 11. Added a GitHub funding link for Buy Me a Coffee.
 12. Completed a fresh private clone build against commit `fe91ca82bae90f5df21052764a4c8fb223dc058f`.
-13. Confirmed GitHub Actions validation run 4 completed successfully, including the source scan, PowerShell and JavaScript tests, static analysis and clean package build.
+13. Confirmed GitHub Actions validation runs 4 and 5 completed successfully, including the source scan, PowerShell and JavaScript tests, static analysis and clean package build.
+14. Required two-factor authentication for every ControlAltDeleteTechBits organisation member.
+15. Left the optional secure two-factor methods restriction disabled.
+16. Enabled release immutability so published release tags and assets cannot be changed.
 
 Latest private-clone validation:
 
@@ -450,4 +453,4 @@ The repository has not been made public, tagged or released. Live tenant output 
 
 ## Next recommended task
 
-Confirm the organisation two-factor authentication policy, add a protected `main` branch ruleset, review the first-release checklist and obtain explicit approval before changing visibility or publishing `v0.14.0-preview.1`.
+Review the first-release checklist and obtain explicit approval before changing visibility or publishing `v0.14.0-preview.1`. Add an enforced `main` branch ruleset after the repository becomes public because GitHub Free does not enforce rulesets on private organisation repositories.
