@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identityatlas.local/schema/atlas-evidence.schema.json",
+  "title": "AtlasEvidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "Key",
+    "Id",
+    "Kind",
+    "TenantId",
+    "CollectedAtUtc",
+    "Source",
+    "Properties",
+    "Collector",
+    "Endpoint",
+    "SourceObjectId",
+    "Completeness",
+    "Fields"
+  ],
+  "properties": {
+    "Key": {
+      "type": "string",
+      "pattern": "^evidence:"
+    },
+    "Id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Kind": {
+      "const": "evidence"
+    },
+    "TenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "CollectedAtUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Source": {
+      "type": "object"
+    },
+    "Properties": {
+      "type": "object"
+    },
+    "Collector": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Endpoint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "SourceObjectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Completeness": {
+      "enum": [
+        "complete",
+        "partial"
+      ]
+    },
+    "Fields": {
+      "type": "object"
+    }
+  }
+}

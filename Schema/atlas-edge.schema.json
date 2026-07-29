@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identityatlas.local/schema/atlas-edge.schema.json",
+  "title": "AtlasEdge",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "Key",
+    "Id",
+    "Kind",
+    "TenantId",
+    "CollectedAtUtc",
+    "Source",
+    "Properties",
+    "From",
+    "To",
+    "Relationship",
+    "State",
+    "EvidenceIds"
+  ],
+  "properties": {
+    "Key": {
+      "type": "string",
+      "pattern": "^edge:"
+    },
+    "Id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Kind": {
+      "const": "relationship"
+    },
+    "TenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "CollectedAtUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Source": {
+      "type": "object"
+    },
+    "Properties": {
+      "type": "object"
+    },
+    "From": {
+      "type": "string",
+      "minLength": 1
+    },
+    "To": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Relationship": {
+      "type": "string",
+      "minLength": 1
+    },
+    "State": {
+      "type": "object"
+    },
+    "EvidenceIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^evidence:"
+      },
+      "uniqueItems": true
+    }
+  }
+}

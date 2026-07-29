@@ -1,0 +1,57 @@
+name: Feature request
+description: Suggest a focused improvement for Microsoft Entra administrators.
+title: "[Feature] "
+labels:
+  - enhancement
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the administrator problem first. Do not include information copied from a live tenant.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Administrator problem
+      description: What task is difficult, unclear or unavailable today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the result an administrator should receive.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested approach
+      description: Include a proposed workflow if you have one.
+    validations:
+      required: false
+  - type: input
+    id: graph-resource
+    attributes:
+      label: Microsoft Graph resource
+      description: Name the Graph resource or official documentation page if relevant.
+    validations:
+      required: false
+  - type: input
+    id: graph-permissions
+    attributes:
+      label: Possible Microsoft Graph permissions
+      description: List any new delegated read permissions you believe may be required.
+    validations:
+      required: false
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project principles
+      options:
+        - label: The request can remain read only.
+          required: true
+        - label: The request can preserve local report processing.
+          required: true
+        - label: I have not included live tenant data.
+          required: true

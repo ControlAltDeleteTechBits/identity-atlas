@@ -1,0 +1,8 @@
+# The maintainer reviews every proposed change before it reaches main.
+* @MarkCADTB
+
+# Protect the contribution and release controls explicitly.
+/.github/ @MarkCADTB
+/tools/ @MarkCADTB
+/IdentityAtlas.psd1 @MarkCADTB
+/SECURITY.md @MarkCADTB

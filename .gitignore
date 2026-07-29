@@ -1,0 +1,43 @@
+# Generated tenant reports and exports
+Output/
+Release/
+work/
+outputs/
+comparisons/
+exports/
+TestResults/
+coverage/
+
+# Local development and editor state
+.codex/
+attachments/
+.vscode/
+.idea/
+node_modules/
+*.log
+*.tmp
+*.temp
+*.bak
+*.user
+Thumbs.db
+.DS_Store
+
+# Authentication and secret material
+.env
+.env.*
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+*.token
+*.secrets.json
+
+# Generated release assets
+*.zip
+*.nupkg
+*-SHA256.txt
+
+# PowerShell analysis output
+PSScriptAnalyzerSettings.psd1.tmp

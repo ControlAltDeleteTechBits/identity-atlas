@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; worker-src blob:; connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+  >
+  <meta name="referrer" content="no-referrer">
+  <title>Identity Atlas</title>
+  <meta name="theme-color" content="#0d1c2f">
+  <link rel="icon" type="image/svg+xml" href="assets/brand/identity-atlas-mark.svg">
+  <link rel="stylesheet" href="assets/app.css">
+  <script defer src="assets/data-runtime.js"></script>
+  <script defer src="data/manifest.js"></script>
+  <script defer src="data/nodes-0001.js"></script>
+  <script defer src="data/edges-0001.js"></script>
+  <script defer src="data/evidence-0001.js"></script>
+  <script defer src="assets/graph-worker-source.js"></script>
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <header class="utility-header">
+    <div class="brand-block">
+      <h1 class="brand-title">
+        <img class="brand-logo" src="assets/brand/identity-atlas-logo.svg" alt="Identity Atlas">
+      </h1>
+    </div>
+
+    <div class="collection-block" aria-label="Collection status">
+      <span class="status-dot" aria-hidden="true"></span>
+      <div>
+        <strong id="collection-status">Reading collection</strong>
+        <span id="collection-summary">Loading report details</span>
+      </div>
+    </div>
+
+    <div class="header-metadata">
+      <div class="metadata-item">
+        <span>Collection date</span>
+        <strong id="collection-date">Loading</strong>
+      </div>
+      <div class="metadata-item tenant-metadata">
+        <span>Tenant</span>
+        <strong id="tenant-name">Loading report</strong>
+      </div>
+    </div>
+
+    <button id="header-explain-access" class="primary-button header-primary" type="button" disabled>
+      <span>Explain access</span>
+      <span class="icon icon-chevron-right" aria-hidden="true"></span>
+    </button>
+  </header>
+
+  <div class="application-frame">
+    <aside class="product-nav" aria-label="Primary">
+      <nav>
+        <button class="nav-item" type="button" data-view="overview" data-kind="">
+          <span class="icon icon-home" aria-hidden="true"></span>
+          <span><strong>Overview</strong><small>Collection summary</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="identities" data-kind="user">
+          <span class="icon icon-user" aria-hidden="true"></span>
+          <span><strong>Identities</strong><small>Users and service accounts</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="groups" data-kind="group">
+          <span class="icon icon-users-group" aria-hidden="true"></span>
+          <span><strong>Groups</strong><small>Microsoft Entra groups</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="applications" data-kind="servicePrincipal,application">
+          <span class="icon icon-apps" aria-hidden="true"></span>
+          <span><strong>Applications</strong><small>Enterprise applications</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="roles" data-kind="roleDefinition">
+          <span class="icon icon-shield-lock" aria-hidden="true"></span>
+          <span><strong>Roles</strong><small>Directory roles</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="policies" data-kind="conditionalAccessPolicy">
+          <span class="icon icon-shield-check" aria-hidden="true"></span>
+          <span><strong>Policies</strong><small>Conditional Access</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="insights" data-kind="">
+          <span class="icon icon-alert-triangle" aria-hidden="true"></span>
+          <span><strong>Insights</strong><small>Admin questions</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="timeline" data-kind="">
+          <span class="icon icon-list-details" aria-hidden="true"></span>
+          <span><strong>Timeline</strong><small>Changes and dates</small></span>
+        </button>
+        <button class="nav-item selected" type="button" aria-current="page" data-view="access" data-kind="">
+          <span class="icon icon-route" aria-hidden="true"></span>
+          <span><strong>Access explorer</strong><small>Why access exists</small></span>
+        </button>
+      </nav>
+
+      <div class="nav-footer">
+        <button class="nav-item" type="button" data-view="settings" data-kind="">
+          <span class="icon icon-settings" aria-hidden="true"></span>
+          <span><strong>Settings</strong><small>Explorer settings</small></span>
+        </button>
+        <a class="nav-item" href="mailto:Mark@controlaltdeletetechbits.co.uk">
+          <span class="icon icon-help-circle" aria-hidden="true"></span>
+          <span><strong>Support</strong><small>Mark@controlaltdeletetechbits.co.uk</small></span>
+        </a>
+        <a class="nav-item" href="https://buymeacoffee.com/cadtb" rel="noopener">
+          <span class="icon icon-circle-check" aria-hidden="true"></span>
+          <span><strong>Donate</strong><small>Buy Me a Coffee</small></span>
+        </a>
+      </div>
+    </aside>
+
+    <main id="main-content" class="content-shell">
+      <div id="coverage-banner" class="sr-only" aria-live="polite">Reading report coverage</div>
+      <div id="summary-cards" hidden></div>
+
+      <header class="page-heading">
+        <div>
+          <p class="eyebrow">ACCESS EXPLORER</p>
+          <h2>Access explorer</h2>
+          <p id="page-subtitle">Explore why the selected identity has access.</p>
+        </div>
+        <button id="mobile-nav-button" class="icon-button mobile-nav-button" type="button" aria-expanded="false" aria-label="Show navigation">
+          <span class="icon icon-menu-2" aria-hidden="true"></span>
+        </button>
+      </header>
+
+      <section class="explorer-frame" aria-label="Access explorer workspace">
+        <aside class="object-browser" aria-label="Search and filters">
+          <label for="global-search">Search objects</label>
+          <div class="search-control">
+            <span class="icon icon-search" aria-hidden="true"></span>
+            <input
+              id="global-search"
+              type="search"
+              autocomplete="off"
+              placeholder="User, group, application, policy or role"
+            >
+          </div>
+
+          <label for="kind-filter">Object type</label>
+          <select id="kind-filter">
+            <option value="">All object types</option>
+            <option value="user">Users</option>
+            <option value="guestUser">Guest users</option>
+            <option value="group">Groups</option>
+            <option value="servicePrincipal,application">Applications and app registrations</option>
+            <option value="servicePrincipal">Applications</option>
+            <option value="application">App registrations</option>
+            <option value="applicationCredential">Application credentials</option>
+            <option value="apiPermission">API permissions</option>
+            <option value="conditionalAccessPolicy">Conditional Access policies</option>
+            <option value="namedLocation">Named locations</option>
+            <option value="authenticationStrength">Authentication strengths</option>
+            <option value="device">Devices</option>
+            <option value="authenticationMethod">Authentication methods</option>
+            <option value="roleDefinition">Directory roles</option>
+          </select>
+
+          <section id="pinned-section" class="pinned-section" aria-labelledby="pinned-heading" hidden>
+            <div class="pinned-heading">
+              <h3 id="pinned-heading">Pinned objects</h3>
+              <span id="pinned-count">0</span>
+            </div>
+            <div id="pinned-objects" class="pinned-objects"></div>
+          </section>
+
+          <div class="results-heading">
+            <span><strong id="result-count">0</strong> objects</span>
+          </div>
+          <div id="search-results" class="search-results" role="list"></div>
+
+          <button id="view-all-objects" class="secondary-button browser-footer-button" type="button">
+            <span class="icon icon-list-details" aria-hidden="true"></span>
+            <span>View all objects</span>
+          </button>
+        </aside>
+
+        <section class="graph-workspace" aria-labelledby="graph-heading">
+          <div class="graph-toolbar">
+            <div class="toolbar-group">
+              <button id="fit-graph" class="toolbar-button" type="button">
+                <span class="icon icon-focus-2" aria-hidden="true"></span>
+                <span>Fit to view</span>
+              </button>
+            </div>
+            <div class="toolbar-group zoom-controls" aria-label="Graph zoom">
+              <button id="zoom-out" class="icon-button" type="button" aria-label="Zoom out">
+                <span class="icon icon-minus" aria-hidden="true"></span>
+              </button>
+              <span id="zoom-value">100%</span>
+              <button id="zoom-in" class="icon-button" type="button" aria-label="Zoom in">
+                <span class="icon icon-plus" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="toolbar-spacer"></div>
+            <button id="show-neighbours" class="toolbar-button" type="button" disabled>
+              <span>Direct and indirect</span>
+              <span class="icon icon-chevron-down" aria-hidden="true"></span>
+            </button>
+            <select id="relationship-filter" class="toolbar-select" aria-label="Relationship filter">
+              <option value="">All relationships</option>
+            </select>
+            <button id="export-mermaid" class="toolbar-button" type="button" disabled>
+              <span>Mermaid</span>
+            </button>
+            <button id="export-svg" class="toolbar-button" type="button" disabled>
+              <span>SVG</span>
+            </button>
+            <button id="export-png" class="toolbar-button" type="button" disabled>
+              <span>PNG</span>
+            </button>
+            <button id="export-evidence" class="toolbar-button" type="button" disabled>
+              <span>Evidence MD</span>
+            </button>
+            <button id="graph-settings" class="icon-button" type="button" aria-label="Graph settings">
+              <span class="icon icon-settings" aria-hidden="true"></span>
+            </button>
+          </div>
+
+          <div class="graph-canvas">
+            <div class="graph-title">
+              <p class="eyebrow">FOCUSED VIEW</p>
+              <h2 id="graph-heading">Relationship graph</h2>
+              <p id="graph-summary">No object selected</p>
+            </div>
+            <div id="relationship-groups" class="relationship-groups" aria-label="Relationship groups" hidden></div>
+            <svg
+              id="relationship-graph"
+              role="img"
+              aria-labelledby="graph-heading graph-description"
+              viewBox="0 0 640 720"
+            ></svg>
+          </div>
+          <p id="graph-description" class="sr-only">No relationship graph is currently displayed.</p>
+          <div id="graph-text-alternative" class="graph-text-alternative"></div>
+        </section>
+
+        <aside class="inspector" aria-labelledby="object-heading">
+          <nav id="selection-breadcrumbs" class="selection-breadcrumbs" aria-label="Object history" hidden></nav>
+          <button id="selection-back" class="inspector-back-button" type="button" hidden>
+            Back
+          </button>
+          <div class="inspector-heading">
+            <div>
+              <p id="object-kind" class="eyebrow">SELECT AN OBJECT</p>
+              <h2 id="object-heading" tabindex="-1">Tenant overview</h2>
+            </div>
+            <div class="inspector-actions">
+              <button id="pin-object" class="small-button" type="button" aria-pressed="false" disabled>
+                Pin object
+              </button>
+              <button id="copy-object-id" class="icon-button" type="button" aria-label="Copy object ID" disabled>
+                <span class="icon icon-copy" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+
+          <div id="object-summary" class="object-summary">
+            Select an object to see its collected identity.
+          </div>
+
+          <div class="inspector-tabs" role="tablist" aria-label="Object information">
+            <button id="evidence-tab" type="button" role="tab" aria-selected="false" aria-controls="explanation-panel">
+              Evidence
+            </button>
+            <button id="details-tab" class="selected" type="button" role="tab" aria-selected="true" aria-controls="object-details">
+              Details
+            </button>
+          </div>
+
+          <div id="object-details" class="object-details" role="tabpanel">
+            Select an object to inspect its properties and relationships.
+          </div>
+
+          <section id="explanation-panel" class="explanation-panel" aria-labelledby="explanation-heading" role="tabpanel" hidden>
+            <div class="explanation-heading">
+              <div>
+                <p class="eyebrow">EVIDENCE-BACKED PATHS</p>
+                <h2 id="explanation-heading">Why this access exists</h2>
+              </div>
+              <button id="close-explanation" class="icon-button" type="button" aria-label="Close evidence">
+                <span class="icon icon-x" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div id="explanation-status" class="explanation-status" aria-live="polite"></div>
+            <div id="path-list" class="path-list" aria-label="Access paths"></div>
+            <article id="path-detail" class="path-detail"></article>
+          </section>
+
+          <button id="explain-access" class="primary-button inspector-primary" type="button" disabled>
+            <span>Explain access</span>
+            <span class="icon icon-chevron-right" aria-hidden="true"></span>
+          </button>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div id="context-menu" class="context-menu" role="menu" hidden>
+    <button id="context-open" type="button" role="menuitem">Open object</button>
+    <button id="context-explain" type="button" role="menuitem">Explain access</button>
+  </div>
+</body>
+</html>

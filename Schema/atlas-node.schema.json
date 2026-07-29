@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identityatlas.local/schema/atlas-node.schema.json",
+  "title": "AtlasNode",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "Key",
+    "Id",
+    "Kind",
+    "TenantId",
+    "CollectedAtUtc",
+    "Source",
+    "Properties",
+    "DisplayName",
+    "Status",
+    "Tags"
+  ],
+  "properties": {
+    "Key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Kind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "TenantId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "CollectedAtUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Source": {
+      "type": "object"
+    },
+    "Properties": {
+      "type": "object"
+    },
+    "DisplayName": {
+      "type": "string"
+    },
+    "Status": {
+      "enum": [
+        "complete",
+        "partial",
+        "unresolved"
+      ]
+    },
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  }
+}

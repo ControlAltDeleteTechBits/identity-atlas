@@ -1,0 +1,56 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PowerShell and JavaScript tests
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install PowerShell test modules
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          Install-Module PSScriptAnalyzer -MinimumVersion 1.22.0 -Scope CurrentUser -Force
+
+      - name: Scan public source
+        shell: pwsh
+        run: |
+          .\tools\Test-IdentityAtlasRelease.ps1
+
+      - name: Run build
+        shell: pwsh
+        run: |
+          .\build.ps1 -NodePath (Get-Command node -ErrorAction Stop).Source
+
+      - name: Build clean release package
+        shell: pwsh
+        run: |
+          .\tools\New-IdentityAtlasRelease.ps1 `
+            -OutputPath .\Release `
+            -NodePath (Get-Command node -ErrorAction Stop).Source `
+            -SkipTests

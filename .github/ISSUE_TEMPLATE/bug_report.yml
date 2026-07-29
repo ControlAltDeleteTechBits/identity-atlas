@@ -1,0 +1,101 @@
+name: Bug report
+description: Report reproducible Identity Atlas behaviour that appears incorrect.
+title: "[Bug] "
+labels:
+  - bug
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem. Do not include live tenant data, generated reports, credentials, tenant identifiers, user details or object identifiers.
+  - type: input
+    id: version
+    attributes:
+      label: Identity Atlas version
+      description: Use the version shown in the module manifest or report header.
+      placeholder: 0.14.0-preview.1
+    validations:
+      required: true
+  - type: input
+    id: powershell
+    attributes:
+      label: PowerShell version
+      description: Run $PSVersionTable.PSVersion and provide only the version.
+      placeholder: 7.6.0
+    validations:
+      required: true
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Installation or connection
+        - Data collection
+        - Report generation
+        - Explorer interface
+        - Access explanation
+        - Insights
+        - Export
+        - Comparison
+        - Local server
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem
+      description: Explain what went wrong without including tenant information.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: List the smallest safe sequence that reproduces the problem.
+      placeholder: |
+        1. Import the module.
+        2. Run the affected command with redacted values.
+        3. Open the named view.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behaviour
+      description: Redact errors before pasting them.
+    validations:
+      required: true
+  - type: dropdown
+    id: coverage
+    attributes:
+      label: Report coverage status
+      options:
+        - Complete
+        - Partial
+        - Report was not generated
+        - I do not know
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data safety confirmation
+      options:
+        - label: I have removed tenant data, credentials, generated reports and confidential screenshots.
+          required: true

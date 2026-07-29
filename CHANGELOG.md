@@ -1,0 +1,41 @@
+# Identity Atlas changelog
+
+This file records user-facing changes. Identity Atlas uses semantic versioning for stable releases and an additional preview label before version 1.0.
+
+## 0.14.0-preview.1
+
+Release date: 29 July 2026
+
+First community preview prepared by Control Alt Delete Tech Bits.
+
+### Added
+
+1. Read-only Microsoft Graph collection for users, groups, applications, directory roles, devices, authentication methods and Conditional Access resources.
+2. Offline single-page report with client-side search, filtering, navigation and relationship expansion.
+3. Evidence-backed access explanations for users and applications.
+4. Graph export to Mermaid, SVG and PNG.
+5. Finding evidence export and remediation PowerShell snippets.
+6. Finding review states and action plans.
+7. Change timeline, coverage diagnostics and access-path confidence.
+8. Permission blast-radius and Conditional Access impact views.
+9. Stale-device and weak-authentication-method checks.
+10. Relationship grouping, breadcrumbs and tenant-specific pinned objects.
+11. JSON, CSV and Markdown exports.
+12. Comparison reports for added, removed and changed objects and relationships.
+13. Loopback-only development server with report-package validation.
+14. Community contribution, support, security and release documentation.
+
+### Security
+
+1. Delegated Microsoft Graph permissions are read only.
+2. Authentication material is removed from collector errors.
+3. Generated reports use a restrictive Content Security Policy.
+4. The local server rejects fixture reports and incomplete report packages.
+5. Live tenant output is excluded from source control and release archives.
+
+### Known limitations
+
+1. Coverage may be partial when Microsoft Graph permissions or administrator roles do not allow a collector to read a resource.
+2. Nested group traversal is not used for directory-role access paths.
+3. Conditional Access simulation is evidence based and does not replace Microsoft policy evaluation.
+4. Reports contain administrative evidence and must be stored securely.
