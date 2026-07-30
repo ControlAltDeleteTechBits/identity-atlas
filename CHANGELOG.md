@@ -37,6 +37,7 @@ First community preview prepared by Control Alt Delete Tech Bits.
 
 1. Complete Microsoft Graph permission coverage now returns an empty missing-scope summary without a PowerShell strict-mode error.
 2. Downstream relationship collectors now accept empty upstream node collections after Microsoft Graph denies or omits a resource.
+3. The Conditional Access empty state now explains that both Policy.Read.All and a supported Microsoft Entra role are required.
 
 ### Known limitations
 

@@ -103,6 +103,13 @@ Describe 'Identity Atlas isolated test fixture' {
         $appText | Should -Not -Match '(?<!report\.)\bmanifest\.security'
     }
 
+    It 'explains both requirements when Conditional Access policy data is unavailable' {
+        $appText = Get-Content -LiteralPath (Join-Path $script:reportPath 'assets/app.js') -Raw
+        $appText | Should -Match 'Policy\.Read\.All'
+        $appText | Should -Match 'supported Microsoft Entra role'
+        $appText | Should -Not -Match 'Identity Atlas v0\.4\.0'
+    }
+
     It 'contains the expected fixture counts' {
         $script:result.NodeCount | Should -Be 16
         $script:result.EdgeCount | Should -Be 21

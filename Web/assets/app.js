@@ -441,7 +441,7 @@
       title: 'Conditional Access policies',
       eyebrow: 'POLICIES',
       subtitle: 'Inspect collected Conditional Access policies and assignment scope.',
-      empty: 'No Conditional Access policies were collected in this report. Regenerate the report with Policy.Read.All using Identity Atlas v0.4.0 or later.'
+      empty: 'No Conditional Access policies were collected in this report. Ensure the signed-in account has Policy.Read.All and a supported Microsoft Entra role, then regenerate the report.'
     },
     insights: {
       title: 'Insights',
