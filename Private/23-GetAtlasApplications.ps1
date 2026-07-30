@@ -5,6 +5,7 @@ function Get-AtlasApplication {
         [string] $TenantId,
 
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [AtlasNode[]] $KnownNode
     )
 

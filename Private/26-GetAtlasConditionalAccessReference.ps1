@@ -5,6 +5,7 @@ function Get-AtlasConditionalAccessReference {
         [string] $TenantId,
 
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [AtlasNode[]] $KnownNode
     )
 

@@ -5,6 +5,7 @@ function Get-AtlasDirectoryRole {
         [string] $TenantId,
 
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [AtlasNode[]] $KnownNode
     )
 

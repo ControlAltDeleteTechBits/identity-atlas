@@ -58,6 +58,7 @@ function Get-AtlasConditionalAccessPolicy {
         [string] $TenantId,
 
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [AtlasNode[]] $KnownNode
     )
 

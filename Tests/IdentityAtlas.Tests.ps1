@@ -768,5 +768,22 @@ Describe 'Identity Atlas isolated test fixture' {
             @($result.Edges | Where-Object Relationship -eq 'conditionalAccessIncludesLocation').Count | Should -Be 1
             @($result.Edges | Where-Object Relationship -eq 'requiresAuthenticationStrength').Count | Should -Be 1
         }
+
+        It 'accepts an empty known-node set after Conditional Access collection is denied' {
+            Mock Invoke-AtlasGraphRequest {
+                [pscustomobject] @{
+                    Items = @()
+                    Metrics = @{ requestCount = 1; retryCount = 0 }
+                }
+            }
+
+            $result = Get-AtlasConditionalAccessReference -TenantId 'tenant-1' -KnownNode @()
+
+            $result.Status | Should -Be 'complete'
+            $result.Nodes.Count | Should -Be 0
+            $result.Edges.Count | Should -Be 0
+            $result.Evidence.Count | Should -Be 0
+            $result.Metrics.requestCount | Should -Be 3
+        }
     }
 }

@@ -5,6 +5,7 @@ function Get-AtlasDeviceAndAuthentication {
         [string] $TenantId,
 
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [AtlasNode[]] $KnownNode
     )
 
