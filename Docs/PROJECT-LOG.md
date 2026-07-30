@@ -592,6 +592,39 @@ Rebuilt release candidate SHA256:
 E062075D5169AEF9E7566DADFE82A1C94058D79BA33C398B8C06CC8AB180CE20
 ```
 
+## First community pre-release
+
+Published on 30 July 2026:
+
+1. Received explicit approval to publish `v0.14.0-preview.1`.
+2. Re-ran the final public release gate against commit `88abcc584864898b75a847e699a351e1c456d3c8`.
+3. Confirmed 13 release checks and all 15 Git history snapshots passed.
+4. Created the annotated tag `v0.14.0-preview.1` with Mark Oldham as tagger.
+5. Verified the local and remote tag both resolve to the tested commit.
+6. Created the GitHub Release as a draft, uploaded both approved assets and checked their names, states and byte sizes before publication.
+7. Published the release as a pre-release and confirmed GitHub reports it as immutable.
+8. Confirmed the public release page shows the pre-release label, tested commit, release notes and approved checksum.
+9. Downloaded the ZIP and checksum file without a GitHub authorisation header.
+10. Confirmed the downloaded ZIP is 93,455 bytes and its SHA256 matches the published checksum.
+11. Extracted the public download, validated the module manifest and imported Identity Atlas version `0.14.0` with all four intended commands.
+12. Re-ran the tenant-data and secret scan against the downloaded package with zero findings.
+13. Confirmed the removed synthetic scale wording is absent from the public download.
+
+Published release:
+
+`https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.14.0-preview.1`
+
+Published assets:
+
+1. `IdentityAtlas-v0.14.0-preview.1.zip`
+2. `IdentityAtlas-v0.14.0-preview.1-SHA256.txt`
+
+Published ZIP SHA256:
+
+```text
+E062075D5169AEF9E7566DADFE82A1C94058D79BA33C398B8C06CC8AB180CE20
+```
+
 ## Next recommended task
 
-Obtain explicit approval to publish `v0.14.0-preview.1`, then create the immutable tag from the fully tested commit, attach the verified ZIP and SHA256 file, mark the GitHub Release as a pre-release and test the download without signing in.
+Open a pinned preview-feedback issue, prepare the community launch announcement and begin the post-release monitoring record.
