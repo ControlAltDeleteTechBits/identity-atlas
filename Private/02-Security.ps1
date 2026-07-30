@@ -86,6 +86,20 @@ function Get-AtlasPermissionAssessment {
     }
 }
 
+function Get-AtlasMissingRecommendedScope {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [object[]] $MissingRequirement
+    )
+
+    return @(
+        $MissingRequirement |
+            ForEach-Object { $_.recommended } |
+            Sort-Object -Unique
+    )
+}
+
 function New-AtlasPermissionPreflightResult {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
         'PSUseShouldProcessForStateChangingFunctions',
@@ -99,17 +113,17 @@ function New-AtlasPermissionPreflightResult {
     )
 
     $assessment = Get-AtlasPermissionAssessment -ContextScope $ContextScope
+    $missingScope = Get-AtlasMissingRecommendedScope -MissingRequirement $assessment.missingRequirements
     $result = [AtlasCollectionResult]::new()
     $result.Status = $assessment.status
     $result.Metrics = @{
         grantedScopeCount = $assessment.grantedScopes.Count
         requiredScopeCount = $assessment.recommendedScopes.Count
         missingScopeCount = $assessment.missingRequirements.Count
-        missingScopes = @($assessment.missingRequirements.recommended | Sort-Object -Unique)
+        missingScopes = $missingScope
     }
 
     if ($assessment.missingRequirements.Count -gt 0) {
-        $missingScope = @($assessment.missingRequirements.recommended | Sort-Object -Unique)
         $result.Warnings.Add(
             "The Microsoft Graph session is missing recommended delegated read scopes: $($missingScope -join ', '). Affected collectors will continue where Microsoft Graph permits and the report will remain partial."
         )

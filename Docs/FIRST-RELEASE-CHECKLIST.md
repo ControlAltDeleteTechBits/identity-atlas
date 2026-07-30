@@ -20,8 +20,8 @@ Checked items have technical or repository evidence. Owner confirmations and pub
 
 ## 1. Ownership and licence
 
-- [ ] Confirm the legal owner named in the copyright notice.
-- [ ] Confirm the MIT Licence is approved for Identity Atlas.
+- [x] Confirm the legal owner named in the copyright notice.
+- [x] Confirm the MIT Licence is approved for Identity Atlas.
 - [x] Confirm `IdentityAtlas.psd1` names Mark Oldham as author.
 - [x] Confirm `IdentityAtlas.psd1` names Control Alt Delete Tech Bits as company.
 - [x] Confirm the repository is owned by the Control Alt Delete Tech Bits GitHub organisation.
@@ -31,8 +31,8 @@ Checked items have technical or repository evidence. Owner confirmations and pub
 
 - [x] Verify the maintainer’s email address.
 - [x] Enable two-factor authentication.
-- [ ] Store recovery codes in a password manager.
-- [ ] Add a second recovery method.
+- [x] Store recovery codes in a password manager.
+- [x] Add a second recovery method.
 - [x] Check that the organisation has no unknown members or applications.
 
 ## 3. Source safety

@@ -42,8 +42,8 @@ function Connect-IdentityAtlas {
         throw 'Microsoft Graph authentication completed without returning a tenant context.'
     }
     $permissionAssessment = Get-AtlasPermissionAssessment -ContextScope @($context.Scopes)
+    $missingScope = Get-AtlasMissingRecommendedScope -MissingRequirement $permissionAssessment.missingRequirements
     if ($permissionAssessment.status -eq 'partial') {
-        $missingScope = @($permissionAssessment.missingRequirements.recommended | Sort-Object -Unique)
         Write-Warning "The authenticated context is missing recommended delegated read scopes: $($missingScope -join ', '). Identity Atlas will mark affected collection as partial."
     }
 
@@ -53,6 +53,6 @@ function Connect-IdentityAtlas {
         AuthType = $context.AuthType
         Scopes = @($context.Scopes)
         PermissionStatus = $permissionAssessment.status
-        MissingScopes = @($permissionAssessment.missingRequirements.recommended | Sort-Object -Unique)
+        MissingScopes = $missingScope
     }
 }

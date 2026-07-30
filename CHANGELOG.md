@@ -33,6 +33,10 @@ First community preview prepared by Control Alt Delete Tech Bits.
 4. The local server rejects fixture reports and incomplete report packages.
 5. Live tenant output is excluded from source control and release archives.
 
+### Fixed
+
+1. Complete Microsoft Graph permission coverage now returns an empty missing-scope summary without a PowerShell strict-mode error.
+
 ### Known limitations
 
 1. Coverage may be partial when Microsoft Graph permissions or administrator roles do not allow a collector to read a resource.

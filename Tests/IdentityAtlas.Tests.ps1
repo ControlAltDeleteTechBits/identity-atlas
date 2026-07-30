@@ -328,6 +328,26 @@ Describe 'Identity Atlas isolated test fixture' {
             $assessment.missingRequirements.Count | Should -Be 0
         }
 
+        It 'summarises complete permission coverage without an empty-property error' {
+            $recommendedScopes = @(
+                'User.Read.All'
+                'UserAuthenticationMethod.Read.All'
+                'Group.Read.All'
+                'Device.Read.All'
+                'Application.Read.All'
+                'Policy.Read.All'
+                'RoleEligibilitySchedule.Read.Directory'
+                'RoleManagement.Read.Directory'
+            )
+
+            $preflight = New-AtlasPermissionPreflightResult -ContextScope $recommendedScopes
+
+            $preflight.Status | Should -Be 'complete'
+            $preflight.Metrics.missingScopeCount | Should -Be 0
+            @($preflight.Metrics.missingScopes).Count | Should -Be 0
+            $preflight.Warnings.Count | Should -Be 0
+        }
+
         It 'accepts documented higher privilege alternatives without requesting them by default' {
             $assessment = Get-AtlasPermissionAssessment -ContextScope @(
                 'Directory.Read.All'
