@@ -510,9 +510,9 @@ D8B8D35B73370711438D4544A6D514648AD83A42D500FFCEE0B7D3830FDBA9E7
 
 The repository remains private. No tag or release was created.
 
-## Next recommended task
+## Publication gate
 
-Obtain explicit approval before changing repository visibility. After changing visibility, recheck the Community Profile, enable private vulnerability reporting, enforce the `main` ruleset and rerun the public release security test before creating the immutable `v0.14.0-preview.1` tag.
+Obtain explicit approval before creating the immutable `v0.14.0-preview.1` tag and publishing the GitHub pre-release assets. The public repository and protected `main` branch are ready for that final publication phase.
 
 ## Public release security gate
 
@@ -548,3 +548,31 @@ Release package SHA256: D8B8D35B73370711438D4544A6D514648AD83A42D500FFCEE0B7D383
 ```
 
 The repository remains private. No tag or release was created.
+
+## Public repository protection
+
+Completed on 30 July 2026:
+
+1. Received explicit approval to begin the public-repository phase.
+2. Changed `ControlAltDeleteTechBits/identity-atlas` from private to public.
+3. Verified that the repository and its 12-commit history are visible without an authenticated GitHub session.
+4. Confirmed the public Community Profile recognises the README, MIT licence, code of conduct, contribution guide, security policy, issue forms and pull request template.
+5. Enabled content reporting for all GitHub users.
+6. Enabled private vulnerability reporting.
+7. Confirmed the dependency graph, Dependabot alerts, security updates and grouped security updates remain enabled.
+8. Enabled Dependabot malware alerts.
+9. Enabled Secret Protection and push protection.
+10. Enabled CodeQL default analysis for both detected languages.
+11. Confirmed the first CodeQL analysis run completed successfully.
+12. Created the active `Main branch protection` ruleset for the default branch.
+13. Blocked branch deletion and force pushes.
+14. Required pull requests and resolution of review conversations.
+15. Required pull request branches to be current with `main`.
+16. Required the `PowerShell and JavaScript tests` GitHub Actions status check.
+17. Retained a repository-administrator bypass so the one-maintainer project cannot be locked out.
+
+No version tag or GitHub Release was created during this phase.
+
+## Next recommended task
+
+Obtain explicit approval to publish `v0.14.0-preview.1`, then create the immutable tag from the fully tested commit, attach the verified ZIP and SHA256 file, mark the GitHub Release as a pre-release and test the download without signing in.

@@ -87,18 +87,18 @@ Checked items have technical or repository evidence. Owner confirmations and pub
 - [x] Confirm commits show only the intended human author and committer.
 - [x] Confirm the bug, feature and security-report routes recognise the repository templates.
 - [x] Enable the dependency graph, Dependabot alerts, security updates and grouped security updates.
-- [ ] Recheck the GitHub community profile after the repository becomes public.
-- [ ] Enable private vulnerability reporting after GitHub exposes the control for the public repository.
+- [x] Recheck the GitHub community profile after the repository becomes public.
+- [x] Enable private vulnerability reporting after GitHub exposes the control for the public repository.
 
-The GitHub Free private-repository view does not expose the Community Profile or private vulnerability reporting controls. Both checks remain public-visibility tasks. No visibility change was made during the private inspection.
+The GitHub Free private-repository view did not expose the Community Profile or private vulnerability reporting controls. Both were verified immediately after public visibility was enabled.
 
 ## 7. Public preview
 
 - [x] Prepare release notes from `CHANGELOG.md`.
-- [ ] Obtain explicit approval to make the repository public.
-- [ ] Change repository visibility to public.
-- [ ] Create and verify the enforced `main` branch ruleset.
-- [ ] Recheck the public Actions history and repository files.
+- [x] Obtain explicit approval to make the repository public.
+- [x] Change repository visibility to public.
+- [x] Create and verify the enforced `main` branch ruleset.
+- [x] Recheck the public Actions history and repository files.
 - [ ] Create tag `v0.14.0-preview.1` from the tested commit.
 - [ ] Mark the release as a pre-release.
 - [ ] Attach the clean ZIP.
