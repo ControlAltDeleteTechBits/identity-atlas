@@ -35,12 +35,6 @@ Generated reports contain sensitive administrative evidence. They are intended f
 15. Permission blast radius and Conditional Access impact panels.
 16. Stale device and weak authentication method hygiene checks.
 
-## Scale smoke test
-
-v0.11.0 was also tested with a temporary large synthetic report containing 2,560 nodes, 3,360 relationships and 3,360 evidence records. The worker-backed search, Insights view and single-result layout remained responsive with no browser console errors.
-
-The synthetic data is generated only for automated testing. It is not included as a report or selectable application data.
-
 ## Requirements
 
 1. PowerShell 7 or later.

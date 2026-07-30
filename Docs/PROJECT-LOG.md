@@ -576,6 +576,22 @@ Completed on 30 July 2026:
 
 No version tag or GitHub Release was created during this phase.
 
+## Public README cleanup
+
+Completed on 30 July 2026:
+
+1. Removed the Scale smoke test section and its synthetic-report wording from the public README at the maintainer’s request.
+2. Rebuilt the release candidate because the README is included in the release ZIP.
+3. Confirmed 45 PowerShell tests and 8 JavaScript tests passed.
+4. Confirmed the source scan and PSScriptAnalyzer returned zero findings.
+5. Updated the current release checklist, release notes and security records with the rebuilt package checksum.
+
+Rebuilt release candidate SHA256:
+
+```text
+E062075D5169AEF9E7566DADFE82A1C94058D79BA33C398B8C06CC8AB180CE20
+```
+
 ## Next recommended task
 
 Obtain explicit approval to publish `v0.14.0-preview.1`, then create the immutable tag from the fully tested commit, attach the verified ZIP and SHA256 file, mark the GitHub Release as a pre-release and test the download without signing in.
