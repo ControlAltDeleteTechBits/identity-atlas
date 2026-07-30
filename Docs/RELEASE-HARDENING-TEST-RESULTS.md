@@ -4,11 +4,11 @@ Date: 29 July 2026
 
 Version: 0.14.0-preview.1 community release candidate
 
-Tested commit: `50c8ed52220d4648c857d295a6371c3e35646f3e`
+Tested commit: `f2bc942d784a6b8dbef3606e6495e32b86fe9d66`
 
 ## Automated validation
 
-PowerShell Pester tests: 41 passed, 0 failed
+PowerShell Pester tests: 44 passed, 0 failed
 
 JavaScript worker tests: 8 passed, 0 failed
 
@@ -24,7 +24,7 @@ Clean release archive import: passed
 
 SHA256 verification: passed
 
-Complete Git history scan: 6 commits passed, 0 findings
+Complete Git history scan: 10 commits passed, 0 findings
 
 The clean build and release package completed successfully.
 
@@ -32,7 +32,7 @@ Release archive:
 
 ```text
 IdentityAtlas-v0.14.0-preview.1.zip
-SHA256: 0F6666B7C6A3A51B834C18355CC870FDDC823C04D70236152F39B48FDB0C09DC
+SHA256: D8B8D35B73370711438D4544A6D514648AD83A42D500FFCEE0B7D3830FDBA9E7
 ```
 
 The archive contained 66 entries and no forbidden generated-data directory or report file. The extracted module passed its safety scan and imported in a fresh PowerShell process with the four expected public commands.
@@ -63,9 +63,16 @@ The live report loaded in the in-app browser.
 
 ## Live tenant evidence
 
-The validated report identified itself as `LiveTenant` and retained the expected object, relationship and evidence counts.
+The final extracted-package validation generated a new report identified as `LiveTenant`. It contained 460 objects, 64 relationships and 64 evidence records.
 
-The existing tenant export was upgraded to schema 1.1.0 and report version 0.13.0. It was not recollected because no reusable Microsoft Graph PowerShell context was available during this phase.
+The report used schema 1.1.0 and report version 0.14.0. Coverage was partial with 12 warnings caused by expected HTTP 403 responses or an unresolved role definition. No internal parameter-binding error remained, no authentication material was found and the process-scoped Graph context was disconnected after collection.
+
+The live rehearsal found and corrected two pre-release defects:
+
+1. A complete permission assessment attempted to read an optional property from an empty collection under PowerShell strict mode.
+2. A downstream relationship collector rejected an empty upstream node collection after Conditional Access collection returned HTTP 403.
+
+The final browser package also explains that Conditional Access collection requires both Policy.Read.All and a supported Microsoft Entra role.
 
 ## Security checks covered
 

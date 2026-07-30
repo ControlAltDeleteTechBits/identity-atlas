@@ -477,6 +477,39 @@ Release candidate SHA256:
 
 The repository remains private. No tag or release was created.
 
+## Final extracted-package tenant validation
+
+Completed on 30 July 2026:
+
+1. Confirmed Control Alt Delete Tech Bits as the intended copyright owner.
+2. Confirmed approval to release Identity Atlas under the MIT Licence.
+3. Confirmed GitHub recovery codes are stored in a password manager.
+4. Confirmed a second GitHub recovery method is configured.
+5. Authenticated the extracted release candidate using the signed-in Mark development-tenant account and a process-scoped Microsoft Graph context.
+6. Found and corrected a PowerShell strict-mode error in the complete permission summary.
+7. Added a regression test and increased the PowerShell test total to 42.
+8. Generated a new live tenant report and found an empty-upstream collection error after Conditional Access returned HTTP 403.
+9. Allowed relationship collectors to receive empty upstream node collections and added a regression test, increasing the PowerShell test total to 43.
+10. Generated a corrected live report with 460 objects, 64 relationships and 64 evidence records.
+11. Confirmed all 12 coverage warnings were expected permission or unresolved-reference warnings and no internal parameter-binding error remained.
+12. Confirmed the report contains no access token, secret, password or private-key material.
+13. Confirmed the Graph context disconnected after collection and the report remains ignored by Git.
+14. Corrected the Conditional Access empty-state guidance to mention both Policy.Read.All and the required Microsoft Entra role.
+15. Added a browser-guidance regression test, increasing the PowerShell test total to 44.
+16. Rebuilt and extracted the final package from commit `f2bc942d784a6b8dbef3606e6495e32b86fe9d66`.
+17. Confirmed Applications, Roles, Policies and Settings open against the final live report package.
+18. Confirmed GET and HEAD return 200, POST returns 405, caching is disabled and the expected browser security headers are present.
+19. Scanned all 10 Git commits with zero safety findings.
+20. Stopped the temporary report server.
+
+Final release candidate SHA256:
+
+```text
+D8B8D35B73370711438D4544A6D514648AD83A42D500FFCEE0B7D3830FDBA9E7
+```
+
+The repository remains private. No tag or release was created.
+
 ## Next recommended task
 
-Obtain the remaining owner confirmations recorded in the first-release checklist, generate one final live tenant report from the extracted module and obtain explicit approval before changing repository visibility. After changing visibility, enforce the `main` ruleset before creating the immutable `v0.14.0-preview.1` tag.
+Complete the remaining private repository community-profile checks and obtain explicit approval before changing repository visibility. After changing visibility, enforce the `main` ruleset before creating the immutable `v0.14.0-preview.1` tag.

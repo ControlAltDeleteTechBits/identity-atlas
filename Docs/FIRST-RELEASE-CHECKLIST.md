@@ -8,12 +8,12 @@ Lead maintainer: Mark Oldham
 
 Complete every required item before making the repository public.
 
-Private launch rehearsal completed against commit `50c8ed52220d4648c857d295a6371c3e35646f3e`.
+Private launch rehearsal completed against commit `f2bc942d784a6b8dbef3606e6495e32b86fe9d66`.
 
 Current release candidate SHA256:
 
 ```text
-0F6666B7C6A3A51B834C18355CC870FDDC823C04D70236152F39B48FDB0C09DC
+D8B8D35B73370711438D4544A6D514648AD83A42D500FFCEE0B7D3830FDBA9E7
 ```
 
 Checked items have technical or repository evidence. Owner confirmations and public publication actions remain unchecked.
@@ -75,15 +75,15 @@ Checked items have technical or repository evidence. Owner confirmations and pub
 - [x] Run `Test-ModuleManifest` against the extracted manifest.
 - [x] Import the extracted module in a fresh PowerShell process.
 - [x] Serve a previously collected live tenant report with the extracted local server.
-- [ ] Generate a new live tenant report from the extracted module during the final publication session.
+- [x] Generate a new live tenant report from an extracted release candidate and re-render it with the final package assets.
 
 ## 6. Private repository inspection
 
 - [ ] Complete `Docs/PRIVATE-REPOSITORY-INSPECTION.md`.
-- [ ] Confirm the repository is still private during inspection.
-- [ ] Confirm the first GitHub Actions validation passes.
-- [ ] Inspect the Actions log for tenant data or local paths.
-- [ ] Confirm commits show only the intended human author and committer.
+- [x] Confirm the repository is still private during inspection.
+- [x] Confirm the first GitHub Actions validation passes.
+- [x] Inspect the Actions log for tenant data or local paths.
+- [x] Confirm commits show only the intended human author and committer.
 - [ ] Confirm community files appear in the GitHub community profile.
 - [ ] Enable private vulnerability reporting when available.
 
