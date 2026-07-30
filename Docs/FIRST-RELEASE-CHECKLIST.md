@@ -6,7 +6,7 @@ Publisher: Control Alt Delete Tech Bits
 
 Lead maintainer: Mark Oldham
 
-Complete every required item before making the repository public.
+This record covers repository publication and the first immutable community pre-release.
 
 Private launch rehearsal completed against commit `f2bc942d784a6b8dbef3606e6495e32b86fe9d66`.
 
@@ -16,7 +16,7 @@ Current release candidate SHA256:
 E062075D5169AEF9E7566DADFE82A1C94058D79BA33C398B8C06CC8AB180CE20
 ```
 
-Checked items have technical or repository evidence. Owner confirmations and public publication actions remain unchecked.
+Checked items have technical or repository evidence. Ongoing post-release work remains unchecked.
 
 ## 1. Ownership and licence
 
@@ -99,30 +99,30 @@ The GitHub Free private-repository view did not expose the Community Profile or 
 - [x] Change repository visibility to public.
 - [x] Create and verify the enforced `main` branch ruleset.
 - [x] Recheck the public Actions history and repository files.
-- [ ] Create tag `v0.14.0-preview.1` from the tested commit.
-- [ ] Mark the release as a pre-release.
-- [ ] Attach the clean ZIP.
-- [ ] Attach the SHA256 file.
-- [ ] Publish the pre-release.
-- [ ] Test the public download link in a signed-out browser session.
+- [x] Create tag `v0.14.0-preview.1` from the tested commit.
+- [x] Mark the release as a pre-release.
+- [x] Attach the clean ZIP.
+- [x] Attach the SHA256 file.
+- [x] Publish the pre-release.
+- [x] Test the public download link in a signed-out browser session.
 
 ## 8. After publication
 
 - [ ] Open an issue to track preview feedback.
 - [ ] Monitor security notifications and issues.
-- [ ] Record release and download evidence for the project activity log.
+- [x] Record release and download evidence for the project activity log.
 - [ ] Publish corrections as a new version.
 - [ ] Do not replace an existing tagged release with different code.
 - [ ] Review feedback before planning the first stable release.
 
 ## Release approval
 
-Release approved by:
+Release approved by: Mark Oldham
 
-Date:
+Date: 30 July 2026
 
-Tested commit:
+Tested commit: `88abcc584864898b75a847e699a351e1c456d3c8`
 
-ZIP SHA256:
+ZIP SHA256: `E062075D5169AEF9E7566DADFE82A1C94058D79BA33C398B8C06CC8AB180CE20`
 
-Known limitations reviewed:
+Known limitations reviewed: Yes
