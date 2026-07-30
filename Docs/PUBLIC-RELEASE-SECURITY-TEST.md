@@ -75,15 +75,23 @@ Microsoft documents `RoleEligibilitySchedule.Read.Directory` as the least-privil
 
 ## GitHub findings
 
-1. Repository visibility remains private.
+1. Repository visibility is public and was verified without an authenticated GitHub session.
 2. Workflow permissions are limited to `contents: read`.
 3. Checkout does not retain Git credentials.
 4. GitHub Actions dependencies are pinned to full commit identifiers.
 5. `pull_request_target` is not used.
 6. Dependency graph, Dependabot alerts, Dependabot security updates and grouped security updates are enabled.
 7. Bug, feature and security-report routes recognise the checked-in templates.
-
-The GitHub Free private-repository view does not expose the Community Profile or private vulnerability reporting controls. These must be rechecked after the repository becomes public.
+8. Private vulnerability reporting is enabled.
+9. Secret Protection and push protection are enabled.
+10. Dependabot malware alerts are enabled.
+11. CodeQL default analysis is enabled and its first run completed successfully.
+12. The Community Profile recognises the README, licence, code of conduct, contribution guide, security policy, issue forms and pull request template.
+13. Content reporting is enabled for all GitHub users.
+14. The active `Main branch protection` ruleset targets the default branch.
+15. The ruleset blocks deletion and force pushes.
+16. Pull requests, resolved conversations, an up-to-date branch and the `PowerShell and JavaScript tests` check are required.
+17. Repository administrators retain an emergency bypass for the one-maintainer project.
 
 ## Residual risks
 
