@@ -52,6 +52,8 @@ Describe 'Identity Atlas community release controls' {
         $workflow | Should -Match '(?m)^\s*contents:\s*read\s*$'
         $workflow | Should -Not -Match '(?m)^\s*contents:\s*write\s*$'
         $workflow | Should -Match 'persist-credentials:\s*false'
+        $workflow | Should -Not -Match '(?m)^\s*pull_request_target\s*:'
+        $workflow | Should -Not -Match '(?m)^\s*uses:\s*[^@\r\n]+@(?![0-9a-f]{40}(?:\s|#|$))'
     }
 
     It 'passes the release safety scan' {
@@ -79,5 +81,15 @@ Describe 'Identity Atlas community release controls' {
         }
 
         $scanRejectedContent | Should -Be $true
+    }
+
+    It 'provides the public release security gate' {
+        $securityGate = Join-Path $script:projectRoot 'tools/Test-IdentityAtlasPublicRelease.ps1'
+
+        Test-Path -LiteralPath $securityGate | Should -Be $true
+        $result = & $securityGate -Path $script:projectRoot -SkipHistory -SkipPackage
+
+        $result.Status | Should -Be 'Passed'
+        $result.CheckCount | Should -BeGreaterThan 7
     }
 }

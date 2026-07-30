@@ -20,12 +20,12 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "24"
           package-manager-cache: false
@@ -54,3 +54,10 @@ jobs:
             -OutputPath .\Release `
             -NodePath (Get-Command node -ErrorAction Stop).Source `
             -SkipTests
+
+      - name: Test public release security boundary
+        shell: pwsh
+        run: |
+          .\tools\Test-IdentityAtlasPublicRelease.ps1 `
+            -ReleasePath .\Release\IdentityAtlas-v0.14.0-preview.1.zip `
+            -SkipHistory

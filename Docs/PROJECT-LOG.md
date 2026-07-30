@@ -512,4 +512,39 @@ The repository remains private. No tag or release was created.
 
 ## Next recommended task
 
-Complete the remaining private repository community-profile checks and obtain explicit approval before changing repository visibility. After changing visibility, enforce the `main` ruleset before creating the immutable `v0.14.0-preview.1` tag.
+Obtain explicit approval before changing repository visibility. After changing visibility, recheck the Community Profile, enable private vulnerability reporting, enforce the `main` ruleset and rerun the public release security test before creating the immutable `v0.14.0-preview.1` tag.
+
+## Public release security gate
+
+Completed on 30 July 2026:
+
+1. Prepared the complete `v0.14.0-preview.1` release notes.
+2. Added `Test-IdentityAtlasPublicRelease.ps1` as a repeatable local and CI release gate.
+3. Scanned the current source with zero tenant-data or secret findings.
+4. Scanned all 11 Git snapshots with zero tenant-data or secret findings.
+5. Confirmed all authors and committers are Mark Oldham using the approved Control Alt Delete Tech Bits email address.
+6. Confirmed the default delegated Microsoft Graph permissions contain no write permission.
+7. Confirmed the live Microsoft Graph wrapper issues GET requests only.
+8. Confirmed the browser code uses no network request API, HTML string injection or dynamic JavaScript evaluation.
+9. Confirmed the report Content Security Policy blocks browser connections.
+10. Restricted the GitHub Actions workflow to full commit identifiers for its external actions.
+11. Enabled GitHub dependency graph, Dependabot alerts, security updates and grouped security updates.
+12. Confirmed the bug, feature and security-report routes recognise the repository templates.
+13. Rebuilt the release candidate and confirmed the SHA256 remained unchanged.
+14. Confirmed the release archive contains no report, test fixture, output folder, Git metadata, certificate or workspace data.
+15. Extracted the package, rescanned it and validated the module manifest.
+16. Confirmed 45 PowerShell tests and 8 JavaScript tests pass with zero PSScriptAnalyzer findings.
+
+Public release security result:
+
+```text
+Security checks: 13 passed, 0 failed
+PowerShell tests: 45 passed, 0 failed
+JavaScript tests: 8 passed, 0 failed
+PSScriptAnalyzer findings: 0
+Git history snapshots: 11 passed
+Unexpected authors or committers: 0
+Release package SHA256: D8B8D35B73370711438D4544A6D514648AD83A42D500FFCEE0B7D3830FDBA9E7
+```
+
+The repository remains private. No tag or release was created.

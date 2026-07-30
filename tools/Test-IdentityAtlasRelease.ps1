@@ -99,6 +99,7 @@ $candidateFiles = @(
             $relativePath = [System.IO.Path]::GetRelativePath($resolvedRoot, $_.FullName)
             -not (Test-AtlasExcludedPath -RelativePath $relativePath) -and
             $relativePath -ne 'tools\Test-IdentityAtlasRelease.ps1' -and
+            $relativePath -ne 'tools\Test-IdentityAtlasPublicRelease.ps1' -and
             $_.Extension.ToLowerInvariant() -in $textExtensions
         }
 )

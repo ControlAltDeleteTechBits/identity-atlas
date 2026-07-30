@@ -47,6 +47,7 @@ Checked items have technical or repository evidence. Owner confirmations and pub
 - [x] Confirm no live tenant identifier, email address or object identifier is staged.
 - [x] Confirm no confidential screenshot is staged.
 - [x] Review the complete Git history before publication.
+- [x] Run `.\tools\Test-IdentityAtlasPublicRelease.ps1` against the final release candidate.
 
 ## 4. Product validation
 
@@ -79,17 +80,21 @@ Checked items have technical or repository evidence. Owner confirmations and pub
 
 ## 6. Private repository inspection
 
-- [ ] Complete `Docs/PRIVATE-REPOSITORY-INSPECTION.md`.
+- [x] Complete `Docs/PRIVATE-REPOSITORY-INSPECTION.md`.
 - [x] Confirm the repository is still private during inspection.
 - [x] Confirm the first GitHub Actions validation passes.
 - [x] Inspect the Actions log for tenant data or local paths.
 - [x] Confirm commits show only the intended human author and committer.
-- [ ] Confirm community files appear in the GitHub community profile.
-- [ ] Enable private vulnerability reporting when available.
+- [x] Confirm the bug, feature and security-report routes recognise the repository templates.
+- [x] Enable the dependency graph, Dependabot alerts, security updates and grouped security updates.
+- [ ] Recheck the GitHub community profile after the repository becomes public.
+- [ ] Enable private vulnerability reporting after GitHub exposes the control for the public repository.
+
+The GitHub Free private-repository view does not expose the Community Profile or private vulnerability reporting controls. Both checks remain public-visibility tasks. No visibility change was made during the private inspection.
 
 ## 7. Public preview
 
-- [ ] Prepare release notes from `CHANGELOG.md`.
+- [x] Prepare release notes from `CHANGELOG.md`.
 - [ ] Obtain explicit approval to make the repository public.
 - [ ] Change repository visibility to public.
 - [ ] Create and verify the enforced `main` branch ruleset.

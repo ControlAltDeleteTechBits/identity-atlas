@@ -1,6 +1,6 @@
 # Identity Atlas release security review
 
-Date: 29 July 2026
+Date: 30 July 2026
 
 Reviewed version: 0.14.0 preview
 
@@ -202,7 +202,7 @@ Review states, layout preferences and pinned object identifiers are stored in br
 The 0.14.0 Identity Atlas community-release build passed:
 
 ```text
-PowerShell tests: 41 passed, 0 failed
+PowerShell tests: 45 passed, 0 failed
 JavaScript graph worker tests: 8 passed, 0 failed
 PSScriptAnalyzer findings: 0
 Live report HTTP status: 200
@@ -220,9 +220,20 @@ Community-release controls also passed:
 
 ```text
 Source safety findings: 0
+Public release security checks: 13 passed, 0 failed
+Git history snapshots scanned: 11
+Unexpected author or committer identities: 0
+Unsafe Graph write methods: 0
+Unsafe browser network or code-evaluation patterns: 0
 Clean release archive import: passed
 Clean release archive safety scan: passed
 SHA256 verification: passed
+```
+
+The verified release candidate SHA256 is:
+
+```text
+D8B8D35B73370711438D4544A6D514648AD83A42D500FFCEE0B7D3830FDBA9E7
 ```
 
 ## 14. Official Microsoft references
