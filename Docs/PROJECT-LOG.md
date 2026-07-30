@@ -570,6 +570,9 @@ Completed on 30 July 2026:
 15. Required pull request branches to be current with `main`.
 16. Required the `PowerShell and JavaScript tests` GitHub Actions status check.
 17. Retained a repository-administrator bypass so the one-maintainer project cannot be locked out.
+18. Opened and merged pull request 1 after all four protected checks passed.
+19. Confirmed GitHub preserved Mark Oldham as author and used the verified `MarkCADTB` account as committer with the approved Control Alt Delete Tech Bits email address.
+20. Updated the history gate to recognise both verified human committer names without allowing another email address or contributor identity.
 
 No version tag or GitHub Release was created during this phase.
 

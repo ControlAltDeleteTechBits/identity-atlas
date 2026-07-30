@@ -43,7 +43,7 @@ GitHub Actions runs the same gate against the release package built by the workf
 
 The test found no tracked tenant report, user export, object identifier, tenant domain, access token, client secret, certificate, local user path or confidential screenshot.
 
-All reviewed commits use Mark Oldham and Mark@controlaltdeletetechbits.co.uk as both author and committer. No additional contributor attribution is present.
+All reviewed commits use Mark Oldham as author. Committers are either Mark Oldham or the verified `MarkCADTB` GitHub account, and every author and committer entry uses Mark@controlaltdeletetechbits.co.uk. No additional contributor attribution is present.
 
 ## Permission findings
 

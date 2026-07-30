@@ -6,6 +6,11 @@ param(
 
     [string] $ExpectedAuthor = 'Mark Oldham',
 
+    [string[]] $ExpectedCommitter = @(
+        'Mark Oldham'
+        'MarkCADTB'
+    ),
+
     [string] $ExpectedEmail = 'Mark@controlaltdeletetechbits.co.uk',
 
     [switch] $SkipHistory,
@@ -201,7 +206,7 @@ if (-not $SkipHistory) {
                 $parts.Count -ne 5 -or
                 $parts[1] -cne $ExpectedAuthor -or
                 $parts[2] -cne $ExpectedEmail -or
-                $parts[3] -cne $ExpectedAuthor -or
+                $parts[3] -cnotin $ExpectedCommitter -or
                 $parts[4] -cne $ExpectedEmail
             ) {
                 $row
@@ -210,7 +215,7 @@ if (-not $SkipHistory) {
     )
     Add-AtlasPublicReleaseCheck -Name 'Git history authorship' -Passed ($unexpectedIdentity.Count -eq 0) -Evidence $(
         if ($unexpectedIdentity.Count -eq 0) {
-            "$($commitRows.Count) commits have the approved human author and committer."
+            "$($commitRows.Count) commits have the approved human author, committer and email address."
         }
         else {
             "Unexpected history identity: $($unexpectedIdentity -join ', ')"
