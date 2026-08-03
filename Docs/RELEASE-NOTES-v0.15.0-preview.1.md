@@ -1,6 +1,6 @@
 # Identity Atlas v0.15.0 preview 1
 
-Release status: local development candidate
+Release status: community preview
 
 Identity Atlas v0.15.0 extends the local relationship model into Microsoft Entra external access and Identity Governance. Core collection remains the default. The new Governance profile is opt-in and requests five additional delegated, read-only Microsoft Graph permissions.
 
@@ -67,10 +67,10 @@ Browser console errors and warnings: 0
 Release candidate SHA256:
 
 ```text
-B0E53A8B4ED010D4C001FF9EA55742E75AB3D7A08D8E91C8F11B9DEFB2A89C99
+C19C0845D4E0895D1BE7DAC568B01310EDB3E52E6BEF4B00E0DDA889ACAABF1A
 ```
 
-Live dev-tenant collection remains a separate release gate. A tenant without configured Administrative Units, PIM groups, access packages or Access Reviews can prove endpoint access and empty-result handling, but it cannot prove rendering of data that does not exist.
+Live collection against a tenant containing representative Administrative Units, PIM groups, access packages and Access Reviews remains a post-release validation priority. A tenant without those configured resources can prove endpoint access and empty-result handling, but it cannot prove rendering of data that does not exist.
 
 ## Known limits
 
@@ -78,4 +78,4 @@ Live dev-tenant collection remains a separate release gate. A tenant without con
 2. Identity Governance endpoints may return no objects when the tenant has no matching configuration.
 3. A granted delegated scope does not replace the Microsoft Entra role required by an endpoint.
 4. The report contains administrative evidence and must be stored and shared as sensitive tenant data.
-5. This is a preview candidate and has not been tagged or published.
+5. This is preview software. Wider tenant configurations may expose cases that were not present during development testing.

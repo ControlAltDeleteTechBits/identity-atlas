@@ -6,7 +6,7 @@ Publisher: Control Alt Delete Tech Bits
 
 Lead maintainer: Mark Oldham
 
-Current development release: 0.15.0 preview
+Current community preview: 0.15.0-preview.1
 
 Identity Atlas is an independent community project. It is not a Microsoft product and is not affiliated with, endorsed by or sponsored by Microsoft.
 
@@ -50,6 +50,8 @@ Generated reports contain sensitive administrative evidence. They are intended f
 Node.js and Pester 5.7.1 are needed only for development and contribution testing.
 
 ## Install from a release
+
+Current preview: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.15.0-preview.1
 
 1. Download the versioned ZIP and matching SHA256 file from GitHub Releases.
 2. Verify the checksum before extracting the ZIP.
