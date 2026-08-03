@@ -78,9 +78,17 @@
           <span class="icon icon-shield-lock" aria-hidden="true"></span>
           <span><strong>Roles</strong><small>Directory roles</small></span>
         </button>
-        <button class="nav-item" type="button" data-view="policies" data-kind="conditionalAccessPolicy">
+        <button class="nav-item" type="button" data-view="policies" data-kind="conditionalAccessPolicy,applicationManagementPolicy">
           <span class="icon icon-shield-check" aria-hidden="true"></span>
-          <span><strong>Policies</strong><small>Conditional Access</small></span>
+          <span><strong>Policies</strong><small>Access and app policies</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="external" data-kind="crossTenantAccessPolicy,externalTenant">
+          <span class="icon icon-route" aria-hidden="true"></span>
+          <span><strong>External access</strong><small>Cross-tenant settings</small></span>
+        </button>
+        <button class="nav-item" type="button" data-view="governance" data-kind="administrativeUnit,accessPackageCatalog,accessPackage,accessPackageAssignmentPolicy,entitlementResource,entitlementSubject,accessReviewDefinition,accessReviewInstance,accessReviewReviewerScope">
+          <span class="icon icon-list-details" aria-hidden="true"></span>
+          <span><strong>Governance</strong><small>Packages and reviews</small></span>
         </button>
         <button class="nav-item" type="button" data-view="insights" data-kind="">
           <span class="icon icon-alert-triangle" aria-hidden="true"></span>
@@ -151,12 +159,22 @@
             <option value="application">App registrations</option>
             <option value="applicationCredential">Application credentials</option>
             <option value="apiPermission">API permissions</option>
+            <option value="conditionalAccessPolicy,applicationManagementPolicy">Policies</option>
             <option value="conditionalAccessPolicy">Conditional Access policies</option>
             <option value="namedLocation">Named locations</option>
             <option value="authenticationStrength">Authentication strengths</option>
             <option value="device">Devices</option>
             <option value="authenticationMethod">Authentication methods</option>
             <option value="roleDefinition">Directory roles</option>
+            <option value="crossTenantAccessPolicy,externalTenant">Cross-tenant access</option>
+            <option value="applicationManagementPolicy">Application management policies</option>
+            <option value="administrativeUnit,accessPackageCatalog,accessPackage,accessPackageAssignmentPolicy,entitlementResource,entitlementSubject,accessReviewDefinition,accessReviewInstance,accessReviewReviewerScope">Identity Governance</option>
+            <option value="administrativeUnit">Administrative Units</option>
+            <option value="accessPackageCatalog">Access package catalogues</option>
+            <option value="accessPackage">Access packages</option>
+            <option value="accessPackageAssignmentPolicy">Access package policies</option>
+            <option value="entitlementResource">Entitlement resources</option>
+            <option value="accessReviewDefinition,accessReviewInstance">Access Reviews</option>
           </select>
 
           <section id="pinned-section" class="pinned-section" aria-labelledby="pinned-heading" hidden>

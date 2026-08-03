@@ -6,7 +6,7 @@ Publisher: Control Alt Delete Tech Bits
 
 Lead maintainer: Mark Oldham
 
-Current release: 0.14.0 preview
+Current development release: 0.15.0 preview
 
 Identity Atlas is an independent community project. It is not a Microsoft product and is not affiliated with, endorsed by or sponsored by Microsoft.
 
@@ -34,6 +34,10 @@ Generated reports contain sensitive administrative evidence. They are intended f
 14. Coverage confidence on access paths.
 15. Permission blast radius and Conditional Access impact panels.
 16. Stale device and weak authentication method hygiene checks.
+17. Nested group paths with intermediate groups retained as evidence-backed relationships.
+18. Cross-tenant access policy and partner-tenant visualisation.
+19. Default and targeted application management policy coverage.
+20. An optional Governance profile covering Administrative Units, PIM for Groups, Entitlement Management and Access Reviews.
 
 ## Requirements
 
@@ -55,8 +59,8 @@ Node.js and Pester 5.7.1 are needed only for development and contribution testin
 Example checksum verification:
 
 ```powershell
-$expected = (Get-Content .\IdentityAtlas-v0.14.0-preview.1-SHA256.txt).Split(' ')[0]
-$actual = (Get-FileHash .\IdentityAtlas-v0.14.0-preview.1.zip -Algorithm SHA256).Hash
+$expected = (Get-Content .\IdentityAtlas-v0.15.0-preview.1-SHA256.txt).Split(' ')[0]
+$actual = (Get-FileHash .\IdentityAtlas-v0.15.0-preview.1.zip -Algorithm SHA256).Hash
 if ($actual -ne $expected) {
     throw 'The downloaded Identity Atlas archive does not match its published checksum.'
 }
@@ -73,6 +77,25 @@ Connect-IdentityAtlas -UseDeviceCode
 Invoke-IdentityAtlas -OutputPath .\Output\DevTenant -OpenReport
 .\tools\Start-IdentityAtlasDevServer.ps1 -Root .\Output\DevTenant -Port 8766
 ```
+
+The Core profile remains the default and requests only the original delegated read permissions. To include Identity Governance data, use the explicit Governance profile for both connection and collection:
+
+```powershell
+Connect-IdentityAtlas -UseDeviceCode -CollectionProfile Governance
+Invoke-IdentityAtlas -CollectionProfile Governance -OutputPath .\Output\DevTenant -OpenReport
+```
+
+The Governance profile adds these delegated read permissions:
+
+```text
+AdministrativeUnit.Read.All
+PrivilegedAssignmentSchedule.Read.AzureADGroup
+PrivilegedEligibilitySchedule.Read.AzureADGroup
+EntitlementManagement.Read.All
+AccessReview.Read.All
+```
+
+Microsoft Entra licensing and a supported signed-in administrator role can still be required before Graph returns PIM, Entitlement Management or Access Review data. A denied or unavailable collector is recorded as partial coverage rather than being hidden.
 
 Normal admin use should always open `.\Output\DevTenant` or another live tenant export. Synthetic fixture data is confined to automated tests, generated in a temporary directory and removed when the tests finish. The development server always refuses fixture data.
 
@@ -126,15 +149,22 @@ User > application app role
 User > direct group > application app role
 User > Conditional Access policy inclusion
 User > direct group > Conditional Access policy inclusion
+User > nested group chain > application app role or Conditional Access policy inclusion
 User > eligible directory role
 User > registered device
 User > authentication method
+User > active or eligible PIM group membership or ownership
+User > access package > governed resource role
+User or group > Administrative Unit membership or scoped administration
+Resource > Access Review definition > review instance and decision evidence
 Application > owner
 Application > credential
 Application > required API permission
 Application registration > enterprise application
 Conditional Access policy > named location
 Conditional Access policy > authentication strength
+Application > application management policy
+Cross-tenant access default > partner tenant configuration
 ```
 
 ## Compare two reports
@@ -161,7 +191,7 @@ Export-IdentityAtlas -InputObject $report -OutputPath .\Output\Exports -Format M
 Export-IdentityAtlas -InputObject $report -OutputPath .\Output\Exports -Format Csv
 ```
 
-It does not traverse nested groups for directory-role access because active group nesting is not supported for role-assignable groups.
+The access worker traverses supported nested group chains up to eight relationships while preventing loops. Microsoft Entra role-assignable groups remain direct-only because role-assignable group nesting is not supported by the platform.
 
 ## Contributing
 

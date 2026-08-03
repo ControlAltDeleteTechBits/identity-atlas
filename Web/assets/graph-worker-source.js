@@ -55,7 +55,7 @@ function search(query, kind) {
 
 function edgeAllowed(currentNode, edge, nextNode) {
   if (edge.Relationship === 'memberOf') {
-    return ['user', 'guestUser'].includes(currentNode.Kind) && nextNode.Kind === 'group';
+    return ['user', 'guestUser', 'group'].includes(currentNode.Kind) && nextNode.Kind === 'group';
   }
   if (edge.Relationship === 'assignedRole') {
     return ['user', 'guestUser', 'group'].includes(currentNode.Kind) && nextNode.Kind === 'roleDefinition';
@@ -75,6 +75,21 @@ function edgeAllowed(currentNode, edge, nextNode) {
   }
   if (edge.Relationship === 'hasAuthenticationMethod') {
     return ['user', 'guestUser'].includes(currentNode.Kind) && nextNode.Kind === 'authenticationMethod';
+  }
+  if (['pimActiveMember', 'pimEligibleMember', 'pimActiveOwner', 'pimEligibleOwner'].includes(edge.Relationship)) {
+    return ['user', 'guestUser', 'directoryObject'].includes(currentNode.Kind) && nextNode.Kind === 'group';
+  }
+  if (edge.Relationship === 'assignedAccessPackage') {
+    return ['user', 'guestUser', 'entitlementSubject', 'directoryObject'].includes(currentNode.Kind) && nextNode.Kind === 'accessPackage';
+  }
+  if (edge.Relationship === 'grantsEntitlementResourceRole') {
+    return currentNode.Kind === 'accessPackage' && ['group', 'servicePrincipal', 'application', 'entitlementResource'].includes(nextNode.Kind);
+  }
+  if (['memberOfAdministrativeUnit', 'administersAdministrativeUnit'].includes(edge.Relationship)) {
+    return ['user', 'guestUser', 'group', 'device', 'directoryObject'].includes(currentNode.Kind) && nextNode.Kind === 'administrativeUnit';
+  }
+  if (edge.Relationship === 'reviewedInAccessReview') {
+    return ['user', 'guestUser', 'directoryObject'].includes(currentNode.Kind) && nextNode.Kind === 'accessReviewInstance';
   }
   return false;
 }
@@ -102,7 +117,7 @@ function explainApplicationAccess(startKey) {
       if (!nextNode) {
         continue;
       }
-      if (['ownedBy', 'hasCredential', 'requiresApiPermission', 'hasServicePrincipal', 'assignedRole', 'requiresAuthenticationStrength', 'conditionalAccessIncludesLocation', 'conditionalAccessExcludesLocation'].includes(edge.Relationship)) {
+      if (['ownedBy', 'hasCredential', 'requiresApiPermission', 'hasServicePrincipal', 'assignedRole', 'requiresAuthenticationStrength', 'conditionalAccessIncludesLocation', 'conditionalAccessExcludesLocation', 'governedByAppManagementPolicy', 'governedByDefaultAppManagementPolicy', 'coveredByAccessReview'].includes(edge.Relationship)) {
         paths.push({
           nodeKey: nextNode.Key,
           nodeKeys: [nodeKey, nextNode.Key],
@@ -121,7 +136,7 @@ function explainUserAccess(startKey, targetKinds) {
     return [];
   }
 
-  const allowedTargetKinds = new Set(targetKinds || ['roleDefinition', 'servicePrincipal', 'conditionalAccessPolicy', 'device', 'authenticationMethod']);
+  const allowedTargetKinds = new Set(targetKinds || ['roleDefinition', 'servicePrincipal', 'application', 'conditionalAccessPolicy', 'device', 'authenticationMethod', 'accessPackage', 'entitlementResource', 'administrativeUnit', 'accessReviewInstance']);
 
   const queue = [{
     nodeKey: startKey,
@@ -134,7 +149,7 @@ function explainUserAccess(startKey, targetKinds) {
     const current = queue.shift();
     const currentNode = nodesByKey.get(current.nodeKey);
 
-    if (current.edgeKeys.length >= 2) {
+    if (current.edgeKeys.length >= 8) {
       continue;
     }
 
@@ -155,7 +170,8 @@ function explainUserAccess(startKey, targetKinds) {
 
       if (allowedTargetKinds.has(nextNode.Kind)) {
         paths.push(nextPath);
-      } else {
+      }
+      if (!allowedTargetKinds.has(nextNode.Kind) || ['group', 'accessPackage'].includes(nextNode.Kind)) {
         queue.push(nextPath);
       }
     }

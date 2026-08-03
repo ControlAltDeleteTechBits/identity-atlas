@@ -2,6 +2,23 @@
 
 This file records user-facing changes. Identity Atlas uses semantic versioning for stable releases and an additional preview label before version 1.0.
 
+## 0.15.0-preview.1
+
+Release status: development candidate
+
+### Added
+
+1. An explicit opt-in Governance collection profile with five delegated read permissions.
+2. Nested group path traversal with intermediate-group evidence and loop protection.
+3. Default and partner-specific cross-tenant access settings.
+4. Tenant-default and targeted application management policies, including policy-to-application coverage.
+5. Administrative Units, member relationships and role assignments scoped to Administrative Units.
+6. Active and eligible PIM for Groups membership and ownership schedules.
+7. Entitlement Management catalogues, access packages, assignment policies, assignments and resource roles.
+8. Access Review definitions, reviewer scopes, instances, decisions and reviewed resources.
+9. Governance and External access browser views, object filters, labels and graph relationship groups.
+10. Focused PowerShell and JavaScript tests for every new collector and access-path type.
+
 ## 0.14.0-preview.1
 
 Release date: 29 July 2026

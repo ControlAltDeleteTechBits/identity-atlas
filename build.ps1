@@ -98,5 +98,5 @@ if (-not $SkipTests) {
     ProjectRoot = $projectRoot
     ModuleVersion = $moduleManifest.Version.ToString()
     PowerShellTests = if ($pesterResult) { $pesterResult.PassedCount } else { 'Skipped' }
-    JavaScriptTests = if ($SkipTests) { 'Skipped' } else { 8 }
+    JavaScriptTests = if ($SkipTests) { 'Skipped' } else { 14 }
 }

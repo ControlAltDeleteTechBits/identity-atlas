@@ -1,8 +1,8 @@
 # Identity Atlas release security review
 
-Date: 30 July 2026
+Date: 3 August 2026
 
-Reviewed version: 0.14.0 preview
+Reviewed version: 0.15.0 preview candidate
 
 Review status: passed for local preview use
 
@@ -44,9 +44,23 @@ RoleEligibilitySchedule.Read.Directory
 RoleManagement.Read.Directory
 ```
 
+The optional Governance profile adds exactly these delegated read permissions:
+
+```text
+AdministrativeUnit.Read.All
+PrivilegedAssignmentSchedule.Read.AzureADGroup
+PrivilegedEligibilitySchedule.Read.AzureADGroup
+EntitlementManagement.Read.All
+AccessReview.Read.All
+```
+
+Core remains the default profile. Governance permissions are requested only when the administrator selects `-CollectionProfile Governance`. The security gate loads the module and checks both recommended scope sets so a future change cannot hide a write permission behind dynamic scope selection.
+
 The scope assessment now checks the scopes returned by `Get-MgContext`. Missing recommended scopes are shown after connection and are recorded as partial coverage in the report. Documented higher privilege alternatives are recognised if an administrator already has them, but Identity Atlas does not request those alternatives by default.
 
 Microsoft Graph delegated permissions are limited by both the granted scope and the signed in administrator's Microsoft Entra role. A correct scope can still return HTTP 403 if the account does not hold a role supported by the endpoint.
+
+Identity Governance availability can also depend on the tenant licence and configured resources. Identity Atlas records those failures as partial collection coverage and does not claim an empty or forbidden endpoint is complete.
 
 ## 4. Endpoint groups and least privilege
 
@@ -109,6 +123,34 @@ Requested scope: `RoleManagement.Read.Directory`.
 Endpoint: `/v1.0/roleManagement/directory/roleEligibilityScheduleInstances`.
 
 Requested scope: `RoleEligibilitySchedule.Read.Directory`.
+
+### Administrative Units
+
+Endpoints include `/v1.0/directory/administrativeUnits` and the members of each collected unit.
+
+Requested Governance scope: `AdministrativeUnit.Read.All`.
+
+### PIM for Groups
+
+Endpoints include active assignment schedule instances and eligible schedule instances. Microsoft Graph requires each request to be filtered by group or principal identifier, so Identity Atlas issues two read requests per collected group.
+
+Requested Governance scopes: `PrivilegedAssignmentSchedule.Read.AzureADGroup` and `PrivilegedEligibilitySchedule.Read.AzureADGroup`.
+
+### Entitlement Management
+
+Endpoints include catalogues, access packages, assignment policies, assignments and expanded resource role scopes.
+
+Requested Governance scope: `EntitlementManagement.Read.All`.
+
+The signed-in account must also hold an accepted Entitlement Management role, such as Access package manager or Catalog owner, or a supported Microsoft Entra role such as Identity Governance Administrator.
+
+### Access Reviews
+
+Endpoints include definitions, instances and decisions.
+
+Requested Governance scope: `AccessReview.Read.All`.
+
+The signed-in account must hold a supported Microsoft Entra role for the type of review being read. Access reviews of Microsoft Entra role assignments have a narrower supported-role set than group or application reviews.
 
 ## 5. Token and credential handling
 
@@ -199,6 +241,23 @@ Review states, layout preferences and pinned object identifiers are stored in br
 
 ## 13. Validation evidence
 
+The 0.15.0 Identity Governance development candidate passed:
+
+```text
+PowerShell tests: 56 passed, 0 failed
+JavaScript graph worker tests: 14 passed, 0 failed
+PSScriptAnalyzer findings: 0
+Source safety findings: 0
+Public release security checks: 11 passed, 0 failed, with history intentionally excluded from the uncommitted local candidate
+Release archive forbidden paths: 0
+Release archive import: passed
+Release archive SHA256: B0E53A8B4ED010D4C001FF9EA55742E75AB3D7A08D8E91C8F11B9DEFB2A89C99
+```
+
+All new collectors have focused mocked Graph-response tests. The worker suite also checks nested group paths, PIM group paths, access-package grants, Administrative Units, Access Review decisions and application management policies. Live Governance collection is a separate gate because it requires interactive delegated consent and representative tenant configuration.
+
+The previous public 0.14.0 review evidence remains below for traceability.
+
 The 0.14.0 Identity Atlas community-release build passed:
 
 ```text
@@ -251,3 +310,9 @@ E062075D5169AEF9E7566DADFE82A1C94058D79BA33C398B8C06CC8AB180CE20
 11. List Conditional Access named locations: https://learn.microsoft.com/graph/api/conditionalaccessroot-list-namedlocations?view=graph-rest-1.0
 12. List authentication strength policies: https://learn.microsoft.com/graph/api/authenticationstrengthroot-list-policies?view=graph-rest-1.0
 13. List eligible role instances: https://learn.microsoft.com/graph/api/rbacapplication-list-roleeligibilityscheduleinstances?view=graph-rest-1.0
+14. List Administrative Unit members: https://learn.microsoft.com/graph/api/administrativeunit-list-members?view=graph-rest-1.0
+15. List PIM for Groups active assignment schedule instances: https://learn.microsoft.com/graph/api/privilegedaccessgroup-list-assignmentscheduleinstances?view=graph-rest-1.0
+16. List PIM for Groups eligibility schedule instances: https://learn.microsoft.com/graph/api/privilegedaccessgroup-list-eligibilityscheduleinstances?view=graph-rest-1.0
+17. List access-package resource role scopes: https://learn.microsoft.com/graph/api/accesspackage-list-resourcerolescopes?view=graph-rest-1.0
+18. List Access Review definitions: https://learn.microsoft.com/graph/api/accessreviewset-list-definitions?view=graph-rest-1.0
+19. List Access Review decisions: https://learn.microsoft.com/graph/api/accessreviewinstance-list-decisions?view=graph-rest-1.0
