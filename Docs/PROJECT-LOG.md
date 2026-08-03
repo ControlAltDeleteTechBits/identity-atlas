@@ -4,7 +4,7 @@ Date: 3 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.15.0 Identity Governance development candidate
+Implementation status: v0.15.0-preview.1 prepared for community publication
 
 ## Current goal
 
@@ -60,7 +60,7 @@ The project now has a working offline SPA, a common graph object model and live 
 5. Public release security gate: passed for source validation.
 6. Browser regression against a copied real-tenant Core report: External access, Governance, combined Policies and Settings views passed.
 7. Browser console errors and warnings: 0.
-8. Live Governance collection: awaiting completion of the delegated consent flow in the development tenant.
+8. Live Governance collection against a tenant containing representative Governance resources remains a post-release validation priority.
 
 ## Roadmap after v0.15.0
 
