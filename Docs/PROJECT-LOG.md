@@ -4,7 +4,7 @@ Date: 3 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.15.0-preview.1 prepared for community publication
+Implementation status: v0.15.0-preview.1 published as a community preview
 
 ## Current goal
 
@@ -69,6 +69,17 @@ The project now has a working offline SPA, a common graph object model and live 
 3. Add sanitised report export and optional watermarking.
 4. Add comparison-timeline rendering inside the main report.
 5. Publish the module through PowerShell Gallery after the v0.15.0 preview is accepted.
+
+## v0.15.0 community publication
+
+1. Published `v0.15.0-preview.1` as a GitHub pre-release on 3 August 2026.
+2. Tagged final `main` commit `0e1aa56a0d0f06ad1e761c11b71144442597025a` with Mark Oldham as tagger.
+3. Published release: `https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.15.0-preview.1`.
+4. Published `IdentityAtlas-v0.15.0-preview.1.zip` and `IdentityAtlas-v0.15.0-preview.1-SHA256.txt` as immutable release assets.
+5. Published SHA256: `50DECB556A50247500EF7743CBD98019E5D27F126BFEE1AD27DA51D4D67ECEA9`.
+6. Downloaded both public assets, verified the checksum, extracted the ZIP and imported module version `0.15.0-preview1` from the downloaded package.
+7. Confirmed the downloaded package exports `Compare-IdentityAtlas`, `Connect-IdentityAtlas`, `Export-IdentityAtlas` and `Invoke-IdentityAtlas`.
+8. The final public release gate passed all 13 checks, including all 22 Git history snapshots, with no tenant-data or secret finding.
 
 ## Changes in v0.14.0
 
