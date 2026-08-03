@@ -17,6 +17,9 @@ function New-AtlasReport {
 
         [object[]] $Collectors = @(),
 
+        [ValidateSet('Core', 'Governance')]
+        [string] $CollectionProfile = 'Core',
+
         [ValidateSet('LiveTenant', 'SampleFixture')]
         [string] $DataOrigin = 'LiveTenant'
     )
@@ -24,8 +27,9 @@ function New-AtlasReport {
     $generatedAtUtc = [datetime]::UtcNow
     $manifest = [ordered] @{
         schemaVersion = '1.1.0'
-        reportVersion = '0.14.0'
+        reportVersion = '0.15.0'
         dataOrigin = $DataOrigin
+        collectionProfile = $CollectionProfile
         generatedAtUtc = $generatedAtUtc.ToString('o')
         tenant = [ordered] @{
             id = $TenantId
@@ -89,6 +93,13 @@ function New-AtlasReport {
             'coverageDiagnostics'
             'releaseSecurityMetadata'
             'identityAtlasBrand'
+            'nestedGroupPaths'
+            'crossTenantAccessGraph'
+            'applicationManagementPolicyGraph'
+            'administrativeUnitGraph'
+            'pimGroupsGraph'
+            'entitlementManagementGraph'
+            'accessReviewGraph'
         )
     }
 

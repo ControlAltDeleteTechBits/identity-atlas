@@ -137,6 +137,18 @@
       device: 'Device',
       authenticationMethod: 'Authentication method',
       roleDefinition: 'Directory role',
+      crossTenantAccessPolicy: 'Cross-tenant access policy',
+      externalTenant: 'External tenant',
+      applicationManagementPolicy: 'Application management policy',
+      administrativeUnit: 'Administrative Unit',
+      accessPackageCatalog: 'Access package catalogue',
+      accessPackage: 'Access package',
+      accessPackageAssignmentPolicy: 'Access package policy',
+      entitlementResource: 'Entitlement resource',
+      entitlementSubject: 'Entitlement subject',
+      accessReviewDefinition: 'Access Review',
+      accessReviewInstance: 'Access Review instance',
+      accessReviewReviewerScope: 'Access Review reviewer scope',
       directoryObject: 'Directory object'
     };
     return labels[kind] || kind;
@@ -157,7 +169,19 @@
       authenticationStrength: 'icon-shield-lock',
       device: 'icon-database',
       authenticationMethod: 'icon-shield-check',
-      roleDefinition: 'icon-shield-lock'
+      roleDefinition: 'icon-shield-lock',
+      crossTenantAccessPolicy: 'icon-route',
+      externalTenant: 'icon-route',
+      applicationManagementPolicy: 'icon-shield-check',
+      administrativeUnit: 'icon-users-group',
+      accessPackageCatalog: 'icon-database',
+      accessPackage: 'icon-apps',
+      accessPackageAssignmentPolicy: 'icon-shield-check',
+      entitlementResource: 'icon-apps',
+      entitlementSubject: 'icon-user',
+      accessReviewDefinition: 'icon-list-details',
+      accessReviewInstance: 'icon-circle-check',
+      accessReviewReviewerScope: 'icon-user'
     };
     return icons[kind] || 'icon-apps';
   }
@@ -177,7 +201,19 @@
       authenticationStrength: 'assets/icons/shield-lock.svg',
       device: 'assets/icons/database.svg',
       authenticationMethod: 'assets/icons/shield-check.svg',
-      roleDefinition: 'assets/icons/shield-lock.svg'
+      roleDefinition: 'assets/icons/shield-lock.svg',
+      crossTenantAccessPolicy: 'assets/icons/route.svg',
+      externalTenant: 'assets/icons/route.svg',
+      applicationManagementPolicy: 'assets/icons/shield-check.svg',
+      administrativeUnit: 'assets/icons/users-group.svg',
+      accessPackageCatalog: 'assets/icons/database.svg',
+      accessPackage: 'assets/icons/apps.svg',
+      accessPackageAssignmentPolicy: 'assets/icons/shield-check.svg',
+      entitlementResource: 'assets/icons/apps.svg',
+      entitlementSubject: 'assets/icons/user.svg',
+      accessReviewDefinition: 'assets/icons/list-details.svg',
+      accessReviewInstance: 'assets/icons/circle-check.svg',
+      accessReviewReviewerScope: 'assets/icons/user.svg'
     };
     return icons[kind] || 'assets/icons/apps.svg';
   }
@@ -198,7 +234,26 @@
       hasAuthenticationMethod: 'Authentication method',
       conditionalAccessIncludesLocation: 'Includes location',
       conditionalAccessExcludesLocation: 'Excludes location',
-      requiresAuthenticationStrength: 'Requires auth strength'
+      requiresAuthenticationStrength: 'Requires auth strength',
+      hasCrossTenantPartner: 'Partner configuration',
+      governedByAppManagementPolicy: 'Governed by app policy',
+      governedByDefaultAppManagementPolicy: 'Governed by default app policy',
+      memberOfAdministrativeUnit: 'Member of Administrative Unit',
+      scopedToAdministrativeUnit: 'Scoped to Administrative Unit',
+      administersAdministrativeUnit: 'Administers Administrative Unit',
+      pimActiveMember: 'PIM active member',
+      pimActiveOwner: 'PIM active owner',
+      pimEligibleMember: 'PIM eligible member',
+      pimEligibleOwner: 'PIM eligible owner',
+      containsAccessPackage: 'Contains access package',
+      governedByAccessPackagePolicy: 'Governed by access package policy',
+      assignedAccessPackage: 'Assigned access package',
+      grantsEntitlementResourceRole: 'Grants resource role',
+      coveredByAccessReview: 'Covered by Access Review',
+      reviewsAccess: 'Reviews access',
+      hasAccessReviewInstance: 'Has review instance',
+      reviewedInAccessReview: 'Reviewed in Access Review',
+      resourceReviewedInAccessReview: 'Resource reviewed in Access Review'
     };
     return labels[relationship] || formatPropertyName(relationship);
   }
@@ -438,10 +493,22 @@
       empty: 'No directory roles were collected in this report. Regenerate the report with RoleManagement.Read.Directory.'
     },
     policies: {
-      title: 'Conditional Access policies',
+      title: 'Policies',
       eyebrow: 'POLICIES',
-      subtitle: 'Inspect collected Conditional Access policies and assignment scope.',
-      empty: 'No Conditional Access policies were collected in this report. Ensure the signed-in account has Policy.Read.All and a supported Microsoft Entra role, then regenerate the report.'
+      subtitle: 'Inspect Conditional Access and application management policies.',
+      empty: 'No policy objects were collected. Ensure the signed-in account has Policy.Read.All and a supported Microsoft Entra role, then regenerate the report.'
+    },
+    external: {
+      title: 'External access',
+      eyebrow: 'EXTERNAL ACCESS',
+      subtitle: 'Inspect default and partner-specific cross-tenant access settings.',
+      empty: 'No cross-tenant access settings were collected in this report.'
+    },
+    governance: {
+      title: 'Identity Governance',
+      eyebrow: 'GOVERNANCE',
+      subtitle: 'Inspect Administrative Units, access packages, PIM assignments and Access Reviews.',
+      empty: 'No governance objects were collected. Regenerate the report with the Governance collection profile.'
     },
     insights: {
       title: 'Insights',
@@ -1894,6 +1961,8 @@
   const relationshipGroupOrder = [
     'Roles',
     'Policies',
+    'Governance',
+    'External access',
     'Applications',
     'Groups',
     'Devices',
@@ -1910,6 +1979,15 @@
     }
     if (['conditionalAccessPolicy', 'conditionalAccessScope', 'namedLocation', 'authenticationStrength'].includes(kind)) {
       return 'Policies';
+    }
+    if (['applicationManagementPolicy'].includes(kind)) {
+      return 'Policies';
+    }
+    if (['administrativeUnit', 'accessPackageCatalog', 'accessPackage', 'accessPackageAssignmentPolicy', 'entitlementResource', 'entitlementSubject', 'accessReviewDefinition', 'accessReviewInstance', 'accessReviewReviewerScope'].includes(kind)) {
+      return 'Governance';
+    }
+    if (['crossTenantAccessPolicy', 'externalTenant'].includes(kind)) {
+      return 'External access';
     }
     if (['servicePrincipal', 'application', 'applicationCredential', 'apiPermission'].includes(kind)) {
       return 'Applications';
@@ -2065,7 +2143,27 @@
         const appRoleName = edges[0].State.appRoleDisplayName || 'an app role';
         return `${nodes[0].DisplayName} has a direct assignment to ${appRoleName} on ${nodes[1].DisplayName}.`;
       }
+      if (nodes[1].Kind === 'administrativeUnit') {
+        return `${nodes[0].DisplayName} ${formatRelationship(edges[0].Relationship).toLocaleLowerCase('en-GB')} ${nodes[1].DisplayName}.`;
+      }
+      if (nodes[1].Kind === 'accessPackage') {
+        return `${nodes[0].DisplayName} has the ${nodes[1].DisplayName} access package.`;
+      }
+      if (nodes[1].Kind === 'accessReviewInstance') {
+        return `${nodes[0].DisplayName} was included in ${nodes[1].DisplayName}.`;
+      }
       return `${nodes[0].DisplayName} has a direct active assignment to ${nodes[1].DisplayName}.`;
+    }
+    if (edges.length > 2) {
+      const steps = edges.map((edge, index) => `${formatRelationship(edge.Relationship)} ${nodes[index + 1].DisplayName}`);
+      return `${nodes[0].DisplayName} reaches ${nodes[nodes.length - 1].DisplayName} through ${steps.join(', then ')}.`;
+    }
+    if (nodes[1].Kind === 'accessPackage') {
+      return `${nodes[0].DisplayName} has the ${nodes[1].DisplayName} access package, which grants ${formatRelationship(edges[1].Relationship).toLocaleLowerCase('en-GB')} on ${nodes[2].DisplayName}.`;
+    }
+    if (['pimActiveMember', 'pimEligibleMember', 'pimActiveOwner', 'pimEligibleOwner'].includes(edges[0].Relationship)) {
+      return `${nodes[0].DisplayName} is connected to ${nodes[1].DisplayName} through ${formatRelationship(edges[0].Relationship).toLocaleLowerCase('en-GB')}. ` +
+        `${nodes[1].DisplayName} has ${formatRelationship(edges[1].Relationship).toLocaleLowerCase('en-GB')} to ${nodes[2].DisplayName}.`;
     }
     if (nodes[2].Kind === 'servicePrincipal') {
       const appRoleName = edges[1].State.appRoleDisplayName || 'an app role';

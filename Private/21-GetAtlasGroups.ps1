@@ -8,6 +8,7 @@ function Get-AtlasGroup {
     $result = [AtlasCollectionResult]::new()
     $endpoint = '/v1.0/groups?$select=id,displayName,description,groupTypes,mailEnabled,securityEnabled,isAssignableToRole,membershipRule'
     $response = Invoke-AtlasGraphRequest -Uri $endpoint
+    $nestedGroupMembershipCount = 0
 
     foreach ($group in $response.Items) {
         $groupNode = New-AtlasNode -TenantId $TenantId -Id $group.id -Kind 'group' -DisplayName $group.displayName -Properties @{
@@ -53,6 +54,9 @@ function Get-AtlasGroup {
                 '#microsoft.graph.device' { 'device' }
                 default { 'directoryObject' }
             }
+            if ($memberKind -eq 'group') {
+                $nestedGroupMembershipCount++
+            }
 
             $memberKey = "tenant:$TenantId`:graph:$memberId"
             if (-not ($result.Nodes.Key -contains $memberKey)) {
@@ -77,6 +81,7 @@ function Get-AtlasGroup {
             $result.Edges.Add(
                 (New-AtlasEdge -TenantId $TenantId -From $memberKey -To $groupNode.Key -Relationship 'memberOf' -State @{
                     assignment = 'direct'
+                    membershipType = if ($memberKind -eq 'group') { 'nestedGroup' } else { 'directMember' }
                 } -EvidenceIds @($evidence.Key) -Source @{
                     collector = 'groupMemberships'
                 })
@@ -139,6 +144,7 @@ function Get-AtlasGroup {
 
     $result.Metrics = @{
         groupCount = $response.Items.Count
+        nestedGroupMembershipCount = $nestedGroupMembershipCount
         requestCount = $response.Metrics.requestCount
         retryCount = $response.Metrics.retryCount
     }

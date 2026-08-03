@@ -4,7 +4,7 @@
 
 Security fixes are currently applied to the latest preview only.
 
-Supported preview: 0.14.0
+Supported preview: 0.15.0
 
 ## Reporting a security issue
 

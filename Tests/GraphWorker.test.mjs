@@ -178,3 +178,129 @@ test('worker explains user device and authentication method relationships', () =
   assert.ok(targets.includes('device'));
   assert.ok(targets.includes('authenticationMethod'));
 });
+
+test('worker explains access through more than one nested group', () => {
+  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const mark = report.nodes.find((node) => node.DisplayName === 'Mark Oldham');
+  const privilegedGroup = report.nodes.find((node) => node.DisplayName === 'Privileged Access Operators');
+  const originalMembership = report.edges.find((edge) => edge.From === mark.Key && edge.To === privilegedGroup.Key && edge.Relationship === 'memberOf');
+  report.edges = report.edges.filter((edge) => edge !== originalMembership);
+  const intermediateGroup = {
+    Key: 'tenant:test:graph:nested-group',
+    Id: 'nested-group',
+    Kind: 'group',
+    DisplayName: 'Nested administration group',
+    Properties: {},
+    Status: 'complete'
+  };
+  report.nodes.push(intermediateGroup);
+  report.edges.push(
+    { Key: 'edge:nested-one', From: mark.Key, To: intermediateGroup.Key, Relationship: 'memberOf', EvidenceIds: [], State: { membershipType: 'directMember' } },
+    { Key: 'edge:nested-two', From: intermediateGroup.Key, To: privilegedGroup.Key, Relationship: 'memberOf', EvidenceIds: [], State: { membershipType: 'nestedGroup' } }
+  );
+  const harness = createWorkerHarness(report);
+  const paths = harness.send({ type: 'explainUserDirectoryRole', requestId: 10, startKey: mark.Key });
+
+  assert.equal(paths.length, 1);
+  assert.equal(paths[0].edgeKeys.length, 3);
+  assert.deepEqual(
+    Array.from(paths[0].nodeKeys, (key) => report.nodes.find((node) => node.Key === key).DisplayName),
+    ['Mark Oldham', 'Nested administration group', 'Privileged Access Operators', 'Global Administrator']
+  );
+});
+
+test('worker explains PIM group membership followed by a role assignment', () => {
+  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const mark = report.nodes.find((node) => node.DisplayName === 'Mark Oldham');
+  const group = report.nodes.find((node) => node.DisplayName === 'Privileged Access Operators');
+  report.edges = report.edges.filter((edge) => !(edge.From === mark.Key && edge.To === group.Key && edge.Relationship === 'memberOf'));
+  report.edges.push({ Key: 'edge:pim-active', From: mark.Key, To: group.Key, Relationship: 'pimActiveMember', EvidenceIds: [], State: { activation: 'active' } });
+  const harness = createWorkerHarness(report);
+  const paths = harness.send({ type: 'explainUserDirectoryRole', requestId: 11, startKey: mark.Key });
+
+  assert.equal(paths.length, 1);
+  assert.equal(paths[0].edgeKeys.length, 2);
+  assert.equal(paths[0].edgeKeys[0], 'edge:pim-active');
+});
+
+test('worker explains access granted through an entitlement package', () => {
+  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const mark = report.nodes.find((node) => node.DisplayName === 'Mark Oldham');
+  const financeApp = report.nodes.find((node) => node.DisplayName === 'Contoso Finance API');
+  const accessPackage = {
+    Key: 'tenant:test:graph:access-package',
+    Id: 'access-package',
+    Kind: 'accessPackage',
+    DisplayName: 'Finance access package',
+    Properties: {},
+    Status: 'complete'
+  };
+  report.nodes.push(accessPackage);
+  report.edges.push(
+    { Key: 'edge:package-assignment', From: mark.Key, To: accessPackage.Key, Relationship: 'assignedAccessPackage', EvidenceIds: [], State: { status: 'Delivered' } },
+    { Key: 'edge:package-resource', From: accessPackage.Key, To: financeApp.Key, Relationship: 'grantsEntitlementResourceRole', EvidenceIds: [], State: { roleDisplayName: 'Finance.Reader' } }
+  );
+  const harness = createWorkerHarness(report);
+  const paths = harness.send({ type: 'explainUserAccess', requestId: 12, startKey: mark.Key });
+  const entitlementPath = paths.find((path) => path.edgeKeys.includes('edge:package-resource'));
+
+  assert.ok(entitlementPath);
+  assert.deepEqual(Array.from(entitlementPath.edgeKeys), ['edge:package-assignment', 'edge:package-resource']);
+});
+
+test('worker explains membership of an Administrative Unit', () => {
+  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const mark = report.nodes.find((node) => node.DisplayName === 'Mark Oldham');
+  const unit = {
+    Key: 'tenant:test:graph:administrative-unit',
+    Id: 'administrative-unit',
+    Kind: 'administrativeUnit',
+    DisplayName: 'UK Operations',
+    Properties: {},
+    Status: 'complete'
+  };
+  report.nodes.push(unit);
+  report.edges.push({ Key: 'edge:administrative-unit', From: mark.Key, To: unit.Key, Relationship: 'memberOfAdministrativeUnit', EvidenceIds: [], State: {} });
+  const harness = createWorkerHarness(report);
+  const paths = harness.send({ type: 'explainUserAccess', requestId: 13, startKey: mark.Key });
+
+  assert.ok(paths.some((path) => path.edgeKeys.includes('edge:administrative-unit')));
+});
+
+test('worker explains a user decision in an Access Review', () => {
+  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const mark = report.nodes.find((node) => node.DisplayName === 'Mark Oldham');
+  const review = {
+    Key: 'tenant:test:graph:access-review',
+    Id: 'access-review',
+    Kind: 'accessReviewInstance',
+    DisplayName: 'Quarterly access review instance',
+    Properties: {},
+    Status: 'complete'
+  };
+  report.nodes.push(review);
+  report.edges.push({ Key: 'edge:access-review', From: mark.Key, To: review.Key, Relationship: 'reviewedInAccessReview', EvidenceIds: [], State: { decision: 'Approve' } });
+  const harness = createWorkerHarness(report);
+  const paths = harness.send({ type: 'explainUserAccess', requestId: 14, startKey: mark.Key });
+
+  assert.ok(paths.some((path) => path.edgeKeys.includes('edge:access-review')));
+});
+
+test('worker explains the application management policy governing an application', () => {
+  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const app = report.nodes.find((node) => node.DisplayName === 'Contoso Finance API registration');
+  const policy = {
+    Key: 'tenant:test:graph:application-management-policy',
+    Id: 'application-management-policy',
+    Kind: 'applicationManagementPolicy',
+    DisplayName: 'Strict application credentials',
+    Properties: {},
+    Status: 'complete'
+  };
+  report.nodes.push(policy);
+  report.edges.push({ Key: 'edge:application-management-policy', From: app.Key, To: policy.Key, Relationship: 'governedByAppManagementPolicy', EvidenceIds: [], State: {} });
+  const harness = createWorkerHarness(report);
+  const paths = harness.send({ type: 'explainApplicationAccess', requestId: 15, startKey: app.Key });
+
+  assert.ok(paths.some((path) => path.edgeKeys.includes('edge:application-management-policy')));
+});

@@ -85,6 +85,7 @@ function Get-AtlasDirectoryRole {
         $result.Evidence.Add($evidence)
         $result.Edges.Add(
             (New-AtlasEdge -TenantId $TenantId -From $principalKey -To $roleKeyById[$assignment.roleDefinitionId] -Relationship 'assignedRole' -State @{
+                assignmentId = $assignment.id
                 activation = 'active'
                 assignment = if ($nodeById.ContainsKey($assignment.principalId) -and $nodeById[$assignment.principalId].Kind -eq 'group') {
                     'group'
@@ -136,6 +137,7 @@ function Get-AtlasDirectoryRole {
         $result.Evidence.Add($evidence)
         $result.Edges.Add(
             (New-AtlasEdge -TenantId $TenantId -From $principalKey -To $roleKeyById[$eligibility.roleDefinitionId] -Relationship 'eligibleRole' -State @{
+                assignmentId = $eligibility.id
                 activation = 'eligible'
                 assignment = if ($nodeById.ContainsKey($eligibility.principalId) -and $nodeById[$eligibility.principalId].Kind -eq 'group') {
                     'group'

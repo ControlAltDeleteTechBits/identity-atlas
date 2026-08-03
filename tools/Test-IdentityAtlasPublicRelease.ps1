@@ -103,15 +103,16 @@ Add-AtlasPublicReleaseCheck -Name 'Tracked path boundary' -Passed ($forbiddenTra
     }
 )
 
-$connectScript = Get-AtlasFileText -RelativePath 'Public\Connect-IdentityAtlas.ps1'
-$scopeMatches = @([regex]::Matches($connectScript, "'([A-Za-z][A-Za-z0-9.]+\.Read(?:\.All|\.Directory)?)'"))
-$defaultScopes = @($scopeMatches | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
-$unsafeScopes = @($defaultScopes | Where-Object { $_ -match '(?i)ReadWrite|\.Write|FullControl' })
+$scopeModule = Import-Module (Join-Path $projectRoot 'IdentityAtlas.psd1') -Force -PassThru
+$defaultScopes = @(& $scopeModule { Get-AtlasRecommendedScope -CollectionProfile Core })
+$governanceScopes = @(& $scopeModule { Get-AtlasRecommendedScope -CollectionProfile Governance })
+$requestedScopes = @($defaultScopes + $governanceScopes | Sort-Object -Unique)
+$unsafeScopes = @($requestedScopes | Where-Object { $_ -match '(?i)ReadWrite|\.Write|FullControl' })
 Add-AtlasPublicReleaseCheck -Name 'Delegated Graph scope boundary' -Passed (
     $defaultScopes.Count -gt 0 -and $unsafeScopes.Count -eq 0
 ) -Evidence $(
     if ($unsafeScopes.Count -eq 0) {
-        "Default delegated scopes are read only: $($defaultScopes -join ', ')."
+        "Core and opt-in Governance delegated scopes are read only. Core: $($defaultScopes -join ', '). Governance total: $($governanceScopes -join ', ')."
     }
     else {
         "Unsafe default scopes: $($unsafeScopes -join ', ')"

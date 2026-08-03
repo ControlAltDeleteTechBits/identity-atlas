@@ -1,6 +1,6 @@
 @{
     RootModule        = 'IdentityAtlas.psm1'
-    ModuleVersion     = '0.14.0'
+    ModuleVersion     = '0.15.0'
     GUID              = 'f0ce5f0e-34dc-4c59-9c12-3e35b581e955'
     Author            = 'Mark Oldham'
     CompanyName       = 'Control Alt Delete Tech Bits'

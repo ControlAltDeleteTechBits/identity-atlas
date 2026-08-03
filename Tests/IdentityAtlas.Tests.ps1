@@ -63,7 +63,7 @@ Describe 'Identity Atlas isolated test fixture' {
 
     It 'records read-only security metadata without serialising tokens' {
         $script:report.manifest.schemaVersion | Should -Be '1.1.0'
-        $script:report.manifest.reportVersion | Should -Be '0.14.0'
+        $script:report.manifest.reportVersion | Should -Be '0.15.0'
         $script:report.manifest.security.readOnlyCollection | Should -Be $true
         $script:report.manifest.security.tokenDataSerialized | Should -Be $false
         $script:report.manifest.security.browserNetworkAccess | Should -Be 'disabled'

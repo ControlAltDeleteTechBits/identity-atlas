@@ -1,10 +1,10 @@
 # Identity Atlas project log and roadmap
 
-Date: 29 July 2026
+Date: 3 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.14.0 Identity Atlas preview
+Implementation status: v0.15.0 Identity Governance development candidate
 
 ## Current goal
 
@@ -30,6 +30,45 @@ The project now has a working offline SPA, a common graph object model and live 
 14. v0.12.0 added relationship grouping, clickable object-history breadcrumbs, tenant-persistent pinned objects and actionable coverage diagnostics.
 15. v0.13.0 completed the first release-hardening phase for permissions, token and tenant data safety, partial collection, report writing and loopback serving.
 16. v0.14.0 renamed the product and technical package to Identity Atlas before public release, while keeping Microsoft Entra ID references only where they describe the supported platform.
+17. v0.15.0 added relationship completeness, external access, application management policies and an opt-in Identity Governance collection profile.
+
+## Changes in v0.15.0
+
+1. Added `Core` and `Governance` collection profiles. Core remains the default.
+2. Added the five approved Governance delegated read permissions without adding any Microsoft Graph write permission.
+3. Added nested group relationship detection and access-path traversal through as many as eight evidence-backed relationships with loop protection.
+4. Added the default cross-tenant access policy and partner-specific cross-tenant configuration nodes.
+5. Added cross-tenant synchronisation state and partner configuration evidence.
+6. Added the tenant-default application management policy and targeted application management policies.
+7. Connected applications and service principals to the explicit policy or documented tenant default that governs them.
+8. Added Administrative Unit nodes, member relationships, scoped role relationships and direct administrator-to-unit explanations.
+9. Added active and eligible PIM for Groups membership and ownership schedule instances.
+10. Added Entitlement Management catalogues, access packages, assignment policies, assignments and governed resource roles.
+11. Added Access Review definitions, reviewer scopes, instances, decisions and affected resources.
+12. Added dedicated External access and Governance views to the offline report.
+13. Added object-type filters, display labels, graph icons, relationship groups and evidence export support for every new object and relationship.
+14. Extended the access worker to explain nested groups, PIM group access, access package grants, Administrative Units and Access Review participation.
+15. Updated the release security gate so both Core and Governance requested scope sets are verified as read-only.
+16. Added eleven focused PowerShell governance tests and six new JavaScript path tests.
+
+## v0.15.0 validation status
+
+1. PowerShell collector and release tests: 56 passed, 0 failed.
+2. JavaScript worker and syntax tests: 14 passed, 0 failed.
+3. PSScriptAnalyzer errors and warnings: 0.
+4. Source safety scan: passed with no tenant data, credential or local-user-path finding.
+5. Public release security gate: passed for source validation.
+6. Browser regression against a copied real-tenant Core report: External access, Governance, combined Policies and Settings views passed.
+7. Browser console errors and warnings: 0.
+8. Live Governance collection: awaiting completion of the delegated consent flow in the development tenant.
+
+## Roadmap after v0.15.0
+
+1. Complete live validation against a tenant containing representative Administrative Units, PIM groups, access packages and Access Reviews.
+2. Add bounded PIM group request concurrency after measuring Graph throttling in a larger tenant.
+3. Add sanitised report export and optional watermarking.
+4. Add comparison-timeline rendering inside the main report.
+5. Publish the module through PowerShell Gallery after the v0.15.0 preview is accepted.
 
 ## Changes in v0.14.0
 
@@ -311,13 +350,14 @@ If a delegated read scope is not granted, the permission preflight and affected 
 
 ## Known gaps
 
-1. Nested group traversal is not implemented.
-2. Role-assignable group nesting is still deliberately treated as unsupported for role paths.
-3. Conditional Access exclusions are visible as relationships, but the path explainer does not treat exclusions as positive access paths.
-4. Device ownership and authentication methods are collected as context; deeper sign-in risk, device compliance policy and Intune relationships are not implemented.
-5. The Timeline view is implemented for a single report, but comparison timeline rendering is still separate future work.
-6. One user authentication-method endpoint returned `403 Forbidden` during live validation.
-7. One live role assignment referenced a role definition that Graph did not return.
+1. Role-assignable group nesting remains deliberately unsupported because Microsoft Entra does not support nested role-assignable groups.
+2. Conditional Access exclusions are visible as relationships, but the path explainer does not treat exclusions as positive access paths.
+3. Device ownership and authentication methods are collected as context; deeper sign-in risk, device compliance policy and Intune relationships are not implemented.
+4. The Timeline view is implemented for a single report, but comparison timeline rendering is still separate future work.
+5. PIM for Groups requires two requests per collected group because Microsoft Graph requires a group or principal filter. This needs live scale measurement.
+6. Identity Governance APIs can return partial data when the tenant lacks the required licence or the signed-in user lacks a supported Microsoft Entra role, even when delegated consent is present.
+7. One user authentication-method endpoint returned `403 Forbidden` during the earlier live validation.
+8. One earlier live role assignment referenced a role definition that Graph did not return.
 
 ## Estimated remaining work
 

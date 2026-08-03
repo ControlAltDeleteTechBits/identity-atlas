@@ -1,8 +1,59 @@
+function Get-AtlasPermissionRequirement {
+    [CmdletBinding()]
+    param(
+        [ValidateSet('Core', 'Governance')]
+        [string] $CollectionProfile = 'Core'
+    )
+
+    $requirements = @(
+        @{ profile = 'Core'; collector = 'users'; recommended = 'User.Read.All'; accepted = @('User.Read.All', 'User.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All') }
+        @{ profile = 'Core'; collector = 'groups'; recommended = 'Group.Read.All'; accepted = @('Group.Read.All', 'Group.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All') }
+        @{ profile = 'Core'; collector = 'devicesAndAuthentication'; recommended = 'Device.Read.All'; accepted = @('Device.Read.All', 'Device.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All') }
+        @{ profile = 'Core'; collector = 'devicesAndAuthentication'; recommended = 'UserAuthenticationMethod.Read.All'; accepted = @('UserAuthenticationMethod.Read.All', 'UserAuthenticationMethod.ReadWrite.All') }
+        @{ profile = 'Core'; collector = 'applications'; recommended = 'Application.Read.All'; accepted = @('Application.Read.All', 'Application.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All') }
+        @{ profile = 'Core'; collector = 'conditionalAccess'; recommended = 'Policy.Read.All'; accepted = @('Policy.Read.All', 'Policy.ReadWrite.ConditionalAccess', 'Policy.ReadWrite.ApplicationConfiguration') }
+        @{ profile = 'Core'; collector = 'directoryRoles'; recommended = 'RoleManagement.Read.Directory'; accepted = @('RoleManagement.Read.Directory', 'RoleManagement.Read.All', 'RoleManagement.ReadWrite.Directory') }
+        @{
+            profile = 'Core'
+            collector = 'directoryRoles'
+            recommended = 'RoleEligibilitySchedule.Read.Directory'
+            accepted = @('RoleEligibilitySchedule.Read.Directory', 'RoleEligibilitySchedule.ReadWrite.Directory', 'RoleManagement.Read.All', 'RoleManagement.Read.Directory', 'RoleManagement.ReadWrite.Directory')
+        }
+        @{ profile = 'Governance'; collector = 'administrativeUnits'; recommended = 'AdministrativeUnit.Read.All'; accepted = @('AdministrativeUnit.Read.All', 'AdministrativeUnit.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All') }
+        @{ profile = 'Governance'; collector = 'pimGroups'; recommended = 'PrivilegedAssignmentSchedule.Read.AzureADGroup'; accepted = @('PrivilegedAssignmentSchedule.Read.AzureADGroup', 'PrivilegedAssignmentSchedule.ReadWrite.AzureADGroup') }
+        @{ profile = 'Governance'; collector = 'pimGroups'; recommended = 'PrivilegedEligibilitySchedule.Read.AzureADGroup'; accepted = @('PrivilegedEligibilitySchedule.Read.AzureADGroup', 'PrivilegedEligibilitySchedule.ReadWrite.AzureADGroup') }
+        @{ profile = 'Governance'; collector = 'entitlementManagement'; recommended = 'EntitlementManagement.Read.All'; accepted = @('EntitlementManagement.Read.All', 'EntitlementManagement.ReadWrite.All') }
+        @{ profile = 'Governance'; collector = 'accessReviews'; recommended = 'AccessReview.Read.All'; accepted = @('AccessReview.Read.All', 'AccessReview.ReadWrite.All') }
+    )
+
+    if ($CollectionProfile -eq 'Governance') {
+        return $requirements
+    }
+    return @($requirements | Where-Object profile -eq 'Core')
+}
+
+function Get-AtlasRecommendedScope {
+    [CmdletBinding()]
+    param(
+        [ValidateSet('Core', 'Governance')]
+        [string] $CollectionProfile = 'Core'
+    )
+
+    return @(
+        Get-AtlasPermissionRequirement -CollectionProfile $CollectionProfile |
+            ForEach-Object { $_.recommended } |
+            Sort-Object -Unique
+    )
+}
+
 function Get-AtlasPermissionAssessment {
     [CmdletBinding()]
     param(
         [AllowNull()]
-        [string[]] $ContextScope
+        [string[]] $ContextScope,
+
+        [ValidateSet('Core', 'Governance')]
+        [string] $CollectionProfile = 'Core'
     )
 
     $grantedScope = @(
@@ -11,54 +62,7 @@ function Get-AtlasPermissionAssessment {
             ForEach-Object { $_.Trim() }
     )
 
-    $requirements = @(
-        @{
-            collector = 'users'
-            recommended = 'User.Read.All'
-            accepted = @('User.Read.All', 'User.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All')
-        }
-        @{
-            collector = 'groups'
-            recommended = 'Group.Read.All'
-            accepted = @('Group.Read.All', 'Group.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All')
-        }
-        @{
-            collector = 'devicesAndAuthentication'
-            recommended = 'Device.Read.All'
-            accepted = @('Device.Read.All', 'Device.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All')
-        }
-        @{
-            collector = 'devicesAndAuthentication'
-            recommended = 'UserAuthenticationMethod.Read.All'
-            accepted = @('UserAuthenticationMethod.Read.All', 'UserAuthenticationMethod.ReadWrite.All')
-        }
-        @{
-            collector = 'applications'
-            recommended = 'Application.Read.All'
-            accepted = @('Application.Read.All', 'Application.ReadWrite.All', 'Directory.Read.All', 'Directory.ReadWrite.All')
-        }
-        @{
-            collector = 'conditionalAccess'
-            recommended = 'Policy.Read.All'
-            accepted = @('Policy.Read.All', 'Policy.ReadWrite.ConditionalAccess')
-        }
-        @{
-            collector = 'directoryRoles'
-            recommended = 'RoleManagement.Read.Directory'
-            accepted = @('RoleManagement.Read.Directory', 'RoleManagement.Read.All', 'RoleManagement.ReadWrite.Directory')
-        }
-        @{
-            collector = 'directoryRoles'
-            recommended = 'RoleEligibilitySchedule.Read.Directory'
-            accepted = @(
-                'RoleEligibilitySchedule.Read.Directory'
-                'RoleEligibilitySchedule.ReadWrite.Directory'
-                'RoleManagement.Read.All'
-                'RoleManagement.Read.Directory'
-                'RoleManagement.ReadWrite.Directory'
-            )
-        }
-    )
+    $requirements = Get-AtlasPermissionRequirement -CollectionProfile $CollectionProfile
 
     $missing = [System.Collections.Generic.List[object]]::new()
     foreach ($requirement in $requirements) {
@@ -109,10 +113,13 @@ function New-AtlasPermissionPreflightResult {
     [CmdletBinding()]
     param(
         [AllowNull()]
-        [string[]] $ContextScope
+        [string[]] $ContextScope,
+
+        [ValidateSet('Core', 'Governance')]
+        [string] $CollectionProfile = 'Core'
     )
 
-    $assessment = Get-AtlasPermissionAssessment -ContextScope $ContextScope
+    $assessment = Get-AtlasPermissionAssessment -ContextScope $ContextScope -CollectionProfile $CollectionProfile
     $missingScope = Get-AtlasMissingRecommendedScope -MissingRequirement $assessment.missingRequirements
     $result = [AtlasCollectionResult]::new()
     $result.Status = $assessment.status
@@ -121,6 +128,7 @@ function New-AtlasPermissionPreflightResult {
         requiredScopeCount = $assessment.recommendedScopes.Count
         missingScopeCount = $assessment.missingRequirements.Count
         missingScopes = $missingScope
+        collectionProfile = $CollectionProfile
     }
 
     if ($assessment.missingRequirements.Count -gt 0) {
