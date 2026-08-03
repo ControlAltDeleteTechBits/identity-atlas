@@ -64,11 +64,7 @@ Browser navigation and filtering against a real-tenant Core report: passed
 Browser console errors and warnings: 0
 ```
 
-Release candidate SHA256:
-
-```text
-C19C0845D4E0895D1BE7DAC568B01310EDB3E52E6BEF4B00E0DDA889ACAABF1A
-```
+The published archive checksum is supplied separately in `IdentityAtlas-v0.15.0-preview.1-SHA256.txt`. Verify the downloaded ZIP against that file before extracting it.
 
 Live collection against a tenant containing representative Administrative Units, PIM groups, access packages and Access Reviews remains a post-release validation priority. A tenant without those configured resources can prove endpoint access and empty-result handling, but it cannot prove rendering of data that does not exist.
 
