@@ -4,7 +4,7 @@ Date: 4 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.15.1-preview.1 release candidate validated and ready for publication
+Implementation status: v0.15.1-preview.1 published to GitHub and PowerShell Gallery
 
 ## Current goal
 
@@ -54,13 +54,23 @@ The project now has a working offline SPA, a common graph object model and live 
 4. PSScriptAnalyzer errors and warnings: 0.
 5. Source safety scan: 100 text files passed with 0 findings.
 6. Public release security gate: 13 passed, 0 failed.
-7. Complete Git history: 25 snapshots passed the authorship, tenant-data and secret scan.
+7. Complete Git history: 28 snapshots passed the authorship, tenant-data and secret scan.
 8. PowerShell Gallery package gate: 16 passed, 0 failed.
 9. Local PSResourceGet discovery and save: passed for `0.15.1-preview1`.
 10. Clean Gallery package import: passed with all four approved commands.
-11. GitHub candidate ZIP SHA256: `F4734FBE1712D12B21607E049EF4B3A7680F8705FAEBE2DE9E8BE2C6D5183163`.
-12. Gallery candidate NuGet SHA256: `430661858408FCACA950E15C375BB75296C7E1802AA355852A442333C6231BAC`.
-13. PowerShell Gallery publication: not started.
+11. Published GitHub ZIP SHA256: `3086FB203C0C3E174EE0D7FBC185DDBDC58BFFE6C61180E4A091280663AF4875`.
+12. Published Gallery NuGet SHA256: `D53795D21C6B90A9BD45EBED480676A0D7B056BD962BAA6684AAFC6193E850DF`.
+13. PowerShell Gallery publication: completed and publicly verified on 4 August 2026.
+
+## v0.15.1 community publication
+
+1. Published the immutable GitHub prerelease `v0.15.1-preview.1` on 4 August 2026.
+2. Published `IdentityAtlas` version `0.15.1-preview1` through the `ControlAltDeleteTechBits` PowerShell Gallery publisher account.
+3. Gallery page: `https://www.powershellgallery.com/packages/IdentityAtlas/0.15.1-preview1`.
+4. Downloaded the public Gallery NuGet package and confirmed that its SHA256 matched the tested package.
+5. Acquired the declared Microsoft Graph authentication dependency from the Gallery in an isolated directory.
+6. Imported the public package in a clean PowerShell 7 process and confirmed all four approved commands.
+7. Deleted the temporary encrypted API key file after publication. No publisher credential was added to the repository or GitHub Actions.
 
 ## Changes in v0.15.0
 
@@ -98,7 +108,7 @@ The project now has a working offline SPA, a common graph object model and live 
 2. Add bounded PIM group request concurrency after measuring Graph throttling in a larger tenant.
 3. Add sanitised report export and optional watermarking.
 4. Add comparison-timeline rendering inside the main report.
-5. Publish the module through PowerShell Gallery after the v0.15.0 preview is accepted.
+5. Gather installation feedback from the PowerShell Gallery preview before preparing a stable release.
 
 ## v0.15.0 community publication
 

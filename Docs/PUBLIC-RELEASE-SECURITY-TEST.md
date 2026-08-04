@@ -2,20 +2,20 @@
 
 Date: 4 August 2026
 
-Current candidate: `v0.15.1-preview.1`
+Current release: `v0.15.1-preview.1`
 
-Current candidate result: passed
+Current release result: passed
 
-Current GitHub release candidate SHA256:
+Published GitHub release SHA256:
 
 ```text
-F4734FBE1712D12B21607E049EF4B3A7680F8705FAEBE2DE9E8BE2C6D5183163
+3086FB203C0C3E174EE0D7FBC185DDBDC58BFFE6C61180E4A091280663AF4875
 ```
 
-Current PowerShell Gallery candidate SHA256:
+Published PowerShell Gallery package SHA256:
 
 ```text
-430661858408FCACA950E15C375BB75296C7E1802AA355852A442333C6231BAC
+D53795D21C6B90A9BD45EBED480676A0D7B056BD962BAA6684AAFC6193E850DF
 ```
 
 ## Purpose
@@ -42,7 +42,7 @@ GitHub Actions runs the same gate against the release package built by the workf
 7. Content Security Policy check: passed.
 8. GitHub Actions trust boundary: passed.
 9. Git history authorship check: passed.
-10. Complete Git history content scan: 25 snapshots passed.
+10. Complete Git history content scan: 28 snapshots passed.
 11. Release package checksum: passed.
 12. Release archive content allowlist: passed.
 13. Extracted package safety and module-manifest validation: passed.
