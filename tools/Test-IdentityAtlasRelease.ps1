@@ -49,6 +49,7 @@ $textExtensions = @(
 
 $approvedPublicEmails = @(
     'mark@controlaltdeletetechbits.co.uk'
+    'noreply@github.com'
 )
 
 $approvedIdentifiers = @(

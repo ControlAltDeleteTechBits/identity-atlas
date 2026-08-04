@@ -255,7 +255,7 @@ Local PSResourceGet discovery and save: passed
 Gallery package clean import: passed
 ```
 
-The Gallery builder accepts no publisher credential. It builds the NuGet package only from the matching checksummed GitHub release archive. The generated package declares Microsoft.Graph.Authentication 2.38.1 or later, and rejects tenant reports, tests, workspace output, Git metadata, certificates and release folders. All committed snapshots retain the approved Mark Oldham authorship and pass the tenant-data and secret scan.
+The Gallery builder accepts no publisher credential. It builds the NuGet package only from the matching checksummed GitHub release archive. The generated package declares Microsoft.Graph.Authentication 2.38.1 or later, and rejects tenant reports, tests, workspace output, Git metadata, certificates and release folders. All committed snapshots retain the approved Mark Oldham or verified MarkCADTB authorship and pass the tenant-data and secret scan. Protected squash merges use GitHub's standard `GitHub <noreply@github.com>` committer identity.
 
 The 0.15.0 Identity Governance development candidate passed:
 

@@ -4,14 +4,20 @@ param(
 
     [string] $ReleasePath,
 
-    [string] $ExpectedAuthor = 'Mark Oldham',
-
-    [string[]] $ExpectedCommitter = @(
+    [string[]] $ExpectedAuthor = @(
         'Mark Oldham'
         'MarkCADTB'
     ),
 
+    [string[]] $ExpectedCommitter = @(
+        'Mark Oldham'
+        'MarkCADTB'
+        'GitHub'
+    ),
+
     [string] $ExpectedEmail = 'Mark@controlaltdeletetechbits.co.uk',
+
+    [string] $ExpectedGitHubCommitterEmail = 'noreply@github.com',
 
     [switch] $SkipHistory,
 
@@ -203,12 +209,25 @@ if (-not $SkipHistory) {
     $unexpectedIdentity = @(
         foreach ($row in $commitRows) {
             $parts = $row -split '\|', 5
+            $authorApproved = (
+                $parts.Count -eq 5 -and
+                $parts[1] -cin $ExpectedAuthor -and
+                $parts[2] -ceq $ExpectedEmail
+            )
+            $directCommitterApproved = (
+                $parts.Count -eq 5 -and
+                $parts[3] -cin @('Mark Oldham', 'MarkCADTB') -and
+                $parts[4] -ceq $ExpectedEmail
+            )
+            $githubCommitterApproved = (
+                $parts.Count -eq 5 -and
+                $parts[3] -ceq 'GitHub' -and
+                $parts[4] -ceq $ExpectedGitHubCommitterEmail
+            )
             if (
-                $parts.Count -ne 5 -or
-                $parts[1] -cne $ExpectedAuthor -or
-                $parts[2] -cne $ExpectedEmail -or
+                -not $authorApproved -or
                 $parts[3] -cnotin $ExpectedCommitter -or
-                $parts[4] -cne $ExpectedEmail
+                (-not $directCommitterApproved -and -not $githubCommitterApproved)
             ) {
                 $row
             }
@@ -216,7 +235,7 @@ if (-not $SkipHistory) {
     )
     Add-AtlasPublicReleaseCheck -Name 'Git history authorship' -Passed ($unexpectedIdentity.Count -eq 0) -Evidence $(
         if ($unexpectedIdentity.Count -eq 0) {
-            "$($commitRows.Count) commits have the approved human author, committer and email address."
+            "$($commitRows.Count) commits have the approved Mark identity or the exact GitHub protected-merge identity."
         }
         else {
             "Unexpected history identity: $($unexpectedIdentity -join ', ')"
