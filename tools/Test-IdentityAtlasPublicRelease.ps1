@@ -89,9 +89,9 @@ Add-AtlasPublicReleaseCheck -Name 'Current source safety scan' -Passed ($sourceS
 $trackedFiles = @(Invoke-AtlasGit -ArgumentList @('ls-files'))
 $forbiddenTrackedPaths = @(
     $trackedFiles | Where-Object {
-        $_ -match '(?i)(^|/)(Output|Release|TestResults|work|attachments|\.codex)(/|$)' -or
+        $_ -match '(?i)(^|/)(Output|Release|Gallery|TestResults|work|attachments|\.codex)(/|$)' -or
         $_ -match '(?i)(^|/)data/report\.json$' -or
-        $_ -match '(?i)\.(pfx|p12|key|cer|crt|zip)$'
+        $_ -match '(?i)\.(pfx|p12|key|cer|crt|zip|nupkg)$'
     }
 )
 Add-AtlasPublicReleaseCheck -Name 'Tracked path boundary' -Passed ($forbiddenTrackedPaths.Count -eq 0) -Evidence $(
@@ -122,7 +122,7 @@ Add-AtlasPublicReleaseCheck -Name 'Delegated Graph scope boundary' -Passed (
 $powerShellFiles = @(
     Get-ChildItem -LiteralPath $projectRoot -Recurse -File -Include *.ps1, *.psm1 |
         Where-Object {
-            $_.FullName -notmatch '(?i)[\\/](Output|Release|TestResults|work|attachments|\.git)[\\/]' -and
+            $_.FullName -notmatch '(?i)[\\/](Output|Release|Gallery|TestResults|work|attachments|\.git)[\\/]' -and
             $_.FullName -ne $PSCommandPath
         }
 )

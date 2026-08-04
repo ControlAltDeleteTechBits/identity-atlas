@@ -2,6 +2,29 @@
 
 This file records user-facing changes. Identity Atlas uses semantic versioning for stable releases and an additional preview label before version 1.0.
 
+## 0.15.1-preview.1
+
+Release date: 4 August 2026
+
+### Added
+
+1. PowerShell Gallery metadata for the project, licence, 85 by 85 product icon, release notes and PowerShell Core compatibility.
+2. A declared Microsoft.Graph.Authentication dependency at the minimum version used for live validation.
+3. A dedicated Gallery package builder that consumes the matching checksummed GitHub release archive.
+4. A repeatable Gallery package gate covering metadata, dependency declarations, archive boundaries, checksums, tenant-data scanning and clean import.
+5. Continuous integration coverage for building and testing the Gallery package without publishing it.
+
+### Changed
+
+1. Updated the module and report version to 0.15.1 preview 1.
+2. Added PowerShell Gallery preview installation guidance while retaining the verified GitHub ZIP installation path.
+
+### Security
+
+1. Gallery packages are generated only from the matching checksummed GitHub release archive.
+2. Generated NuGet packages reject reports, tests, workspace output, Git metadata, certificates and release folders.
+3. Publisher credentials are not accepted by the package builder and are not stored in the repository.
+
 ## 0.15.0-preview.1
 
 Release date: 3 August 2026

@@ -27,7 +27,7 @@ function New-AtlasReport {
     $generatedAtUtc = [datetime]::UtcNow
     $manifest = [ordered] @{
         schemaVersion = '1.1.0'
-        reportVersion = '0.15.0'
+        reportVersion = '0.15.1'
         dataOrigin = $DataOrigin
         collectionProfile = $CollectionProfile
         generatedAtUtc = $generatedAtUtc.ToString('o')

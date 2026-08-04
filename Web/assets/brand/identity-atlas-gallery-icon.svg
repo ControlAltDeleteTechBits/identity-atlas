@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="85" height="85" viewBox="0 0 48 48" role="img" aria-labelledby="title desc">
+  <title id="title">Identity Atlas</title>
+  <desc id="desc">Identity Atlas cartographic globe mark.</desc>
+  <g transform="rotate(-8 24 24)">
+    <circle cx="24" cy="24" r="18" fill="#ffffff" stroke="#0d1c2f" stroke-width="1.8"/>
+    <ellipse cx="24" cy="24" rx="7.2" ry="18" fill="none" stroke="#087f86" stroke-width="1.5"/>
+    <path d="M6 24h36M9.4 14.2c8.8 4.4 20.4 4.4 29.2 0M9.4 33.8c8.8-4.4 20.4-4.4 29.2 0" fill="none" stroke="#087f86" stroke-width="1.35" stroke-linecap="round"/>
+    <circle cx="38.5" cy="13.5" r="3.2" fill="#087f86" stroke="#ffffff" stroke-width="1.4"/>
+  </g>
+</svg>

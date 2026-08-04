@@ -1,15 +1,21 @@
 # Identity Atlas public release security test
 
-Date: 30 July 2026
+Date: 4 August 2026
 
-Version: `v0.14.0-preview.1`
+Current candidate: `v0.15.1-preview.1`
 
-Result: passed
+Current candidate result: passed
 
-Release candidate SHA256:
+Current GitHub release candidate SHA256:
 
 ```text
-E062075D5169AEF9E7566DADFE82A1C94058D79BA33C398B8C06CC8AB180CE20
+F4734FBE1712D12B21607E049EF4B3A7680F8705FAEBE2DE9E8BE2C6D5183163
+```
+
+Current PowerShell Gallery candidate SHA256:
+
+```text
+430661858408FCACA950E15C375BB75296C7E1802AA355852A442333C6231BAC
 ```
 
 ## Purpose
@@ -20,7 +26,7 @@ Run it from the repository root:
 
 ```powershell
 .\tools\Test-IdentityAtlasPublicRelease.ps1 `
-    -ReleasePath .\Release\IdentityAtlas-v0.14.0-preview.1.zip
+    -ReleasePath .\Release\IdentityAtlas-v0.15.1-preview.1.zip
 ```
 
 GitHub Actions runs the same gate against the release package built by the workflow. CI skips the full history loop because the complete history is checked locally before publication.
@@ -36,10 +42,12 @@ GitHub Actions runs the same gate against the release package built by the workf
 7. Content Security Policy check: passed.
 8. GitHub Actions trust boundary: passed.
 9. Git history authorship check: passed.
-10. Complete Git history content scan: 11 snapshots passed.
+10. Complete Git history content scan: 25 snapshots passed.
 11. Release package checksum: passed.
 12. Release archive content allowlist: passed.
 13. Extracted package safety and module-manifest validation: passed.
+
+The separate PowerShell Gallery gate passed 16 checks covering source metadata, dependency metadata, checksums, package boundaries, local PSResourceGet discovery, tenant-data scanning and clean import.
 
 The test found no tracked tenant report, user export, object identifier, tenant domain, access token, client secret, certificate, local user path or confidential screenshot.
 

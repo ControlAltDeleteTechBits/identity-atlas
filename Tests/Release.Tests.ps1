@@ -9,7 +9,20 @@ Describe 'Identity Atlas community release controls' {
         $manifest.Author | Should -Be 'Mark Oldham'
         $manifest.CompanyName | Should -Be 'Control Alt Delete Tech Bits'
         $manifest.Copyright | Should -Match 'Control Alt Delete Tech Bits'
+        $manifest.ModuleVersion | Should -Be '0.15.1'
         $manifest.PrivateData.PSData.Prerelease | Should -Be 'preview1'
+        $manifest.CompatiblePSEditions | Should -Be @('Core')
+        $manifest.PrivateData.PSData.ProjectUri | Should -Be 'https://github.com/ControlAltDeleteTechBits/identity-atlas'
+        $manifest.PrivateData.PSData.LicenseUri | Should -Be 'https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/LICENSE'
+        $manifest.PrivateData.PSData.IconUri | Should -Match 'identity-atlas-gallery-icon\.svg$'
+        $manifest.PrivateData.PSData.ReleaseNotes | Should -Match 'v0\.15\.1-preview\.1'
+
+        $graphDependency = @(
+            $manifest.RequiredModules |
+                Where-Object { $_.ModuleName -eq 'Microsoft.Graph.Authentication' }
+        )
+        $graphDependency.Count | Should -Be 1
+        [version] $graphDependency[0].ModuleVersion | Should -BeGreaterOrEqual ([version] '2.38.1')
     }
 
     It 'contains the required community files' {
@@ -34,7 +47,9 @@ Describe 'Identity Atlas community release controls' {
 
         $gitIgnore | Should -Match '(?m)^Output/\r?$'
         $gitIgnore | Should -Match '(?m)^Release/\r?$'
+        $gitIgnore | Should -Match '(?m)^Gallery/\r?$'
         $gitIgnore | Should -Match '(?m)^\*\.zip\r?$'
+        $gitIgnore | Should -Match '(?m)^\*\.nupkg\r?$'
         $gitIgnore | Should -Match '(?m)^\*\.pfx\r?$'
     }
 
@@ -91,5 +106,17 @@ Describe 'Identity Atlas community release controls' {
 
         $result.Status | Should -Be 'Passed'
         $result.CheckCount | Should -BeGreaterThan 7
+    }
+
+    It 'provides and passes the PowerShell Gallery source gate' {
+        $builder = Join-Path $script:projectRoot 'tools/New-IdentityAtlasGalleryPackage.ps1'
+        $galleryGate = Join-Path $script:projectRoot 'tools/Test-IdentityAtlasGalleryPackage.ps1'
+
+        Test-Path -LiteralPath $builder | Should -Be $true
+        Test-Path -LiteralPath $galleryGate | Should -Be $true
+        $result = & $galleryGate -Path $script:projectRoot -SkipPackage
+
+        $result.Status | Should -Be 'Passed'
+        $result.CheckCount | Should -BeGreaterThan 5
     }
 }

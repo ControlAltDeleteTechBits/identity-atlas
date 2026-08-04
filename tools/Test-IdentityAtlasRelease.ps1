@@ -22,6 +22,7 @@ $excludedDirectoryNames = @(
     '.vscode'
     'attachments'
     'coverage'
+    'Gallery'
     'node_modules'
     'Output'
     'outputs'
