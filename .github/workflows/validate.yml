@@ -36,6 +36,7 @@ jobs:
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
           Install-Module PSScriptAnalyzer -MinimumVersion 1.22.0 -Scope CurrentUser -Force
+          Install-Module Microsoft.Graph.Authentication -RequiredVersion 2.38.1 -Scope CurrentUser -Force
 
       - name: Scan public source
         shell: pwsh
@@ -59,5 +60,12 @@ jobs:
         shell: pwsh
         run: |
           .\tools\Test-IdentityAtlasPublicRelease.ps1 `
-            -ReleasePath .\Release\IdentityAtlas-v0.15.0-preview.1.zip `
+            -ReleasePath .\Release\IdentityAtlas-v0.15.1-preview.1.zip `
             -SkipHistory
+
+      - name: Build and test PowerShell Gallery package
+        shell: pwsh
+        run: |
+          .\tools\New-IdentityAtlasGalleryPackage.ps1 `
+            -OutputPath .\Gallery `
+            -ReleasePath .\Release\IdentityAtlas-v0.15.1-preview.1.zip

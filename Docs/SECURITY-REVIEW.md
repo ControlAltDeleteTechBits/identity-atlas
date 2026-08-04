@@ -1,8 +1,8 @@
 # Identity Atlas release security review
 
-Date: 3 August 2026
+Date: 4 August 2026
 
-Reviewed version: 0.15.0 preview candidate
+Reviewed version: 0.15.1 PowerShell Gallery preview candidate
 
 Review status: passed for local preview use
 
@@ -240,6 +240,22 @@ Review states, layout preferences and pinned object identifiers are stored in br
 6. One live authentication method request previously returned HTTP 403 because delegated scope and administrator role requirements are both enforced by Microsoft Graph.
 
 ## 13. Validation evidence
+
+The 0.15.1 PowerShell Gallery candidate passed:
+
+```text
+PowerShell tests: 57 passed, 0 failed
+JavaScript graph worker tests: 14 passed, 0 failed
+PSScriptAnalyzer findings: 0
+Source safety findings: 0
+Public release security checks: 13 passed, 0 failed
+Complete Git history snapshots: 25 passed, 0 failed
+PowerShell Gallery package checks: 16 passed, 0 failed
+Local PSResourceGet discovery and save: passed
+Gallery package clean import: passed
+```
+
+The Gallery builder accepts no publisher credential. It builds the NuGet package only from the matching checksummed GitHub release archive. The generated package declares Microsoft.Graph.Authentication 2.38.1 or later, and rejects tenant reports, tests, workspace output, Git metadata, certificates and release folders. All committed snapshots retain the approved Mark Oldham authorship and pass the tenant-data and secret scan.
 
 The 0.15.0 Identity Governance development candidate passed:
 

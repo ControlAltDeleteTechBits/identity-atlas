@@ -1,10 +1,10 @@
 # Identity Atlas project log and roadmap
 
-Date: 3 August 2026
+Date: 4 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.15.0-preview.1 published as a community preview
+Implementation status: v0.15.1-preview.1 release candidate validated and ready for publication
 
 ## Current goal
 
@@ -31,6 +31,36 @@ The project now has a working offline SPA, a common graph object model and live 
 15. v0.13.0 completed the first release-hardening phase for permissions, token and tenant data safety, partial collection, report writing and loopback serving.
 16. v0.14.0 renamed the product and technical package to Identity Atlas before public release, while keeping Microsoft Entra ID references only where they describe the supported platform.
 17. v0.15.0 added relationship completeness, external access, application management policies and an opt-in Identity Governance collection profile.
+18. v0.15.1 added the first PowerShell Gallery package, dependency metadata and repeatable package security validation.
+
+## Changes in v0.15.1
+
+1. Updated the module and report version to `0.15.1` with Gallery prerelease label `preview1`.
+2. Declared PowerShell Core compatibility and PowerShell 7 as the minimum supported runtime.
+3. Declared Microsoft.Graph.Authentication 2.38.1 or later as a module dependency.
+4. Added approved project, licence, release note and Gallery icon metadata.
+5. Added an 85 by 85 transparent Identity Atlas Gallery icon.
+6. Added `New-IdentityAtlasGalleryPackage.ps1` to build the NuGet package from the matching checksummed GitHub release ZIP.
+7. Added `Test-IdentityAtlasGalleryPackage.ps1` to validate manifest metadata, NuGet metadata, dependencies, package contents, checksum, safety scan and clean import.
+8. Added Gallery packaging to the read-only validation workflow without adding publication credentials or write permissions.
+9. Added Gallery output exclusions and preview installation guidance.
+10. Prepared release notes for `v0.15.1-preview.1`.
+
+## v0.15.1 validation status
+
+1. Source manifest validation: passed.
+2. PowerShell tests: 57 passed, 0 failed.
+3. JavaScript tests: 14 passed, 0 failed.
+4. PSScriptAnalyzer errors and warnings: 0.
+5. Source safety scan: 100 text files passed with 0 findings.
+6. Public release security gate: 13 passed, 0 failed.
+7. Complete Git history: 25 snapshots passed the authorship, tenant-data and secret scan.
+8. PowerShell Gallery package gate: 16 passed, 0 failed.
+9. Local PSResourceGet discovery and save: passed for `0.15.1-preview1`.
+10. Clean Gallery package import: passed with all four approved commands.
+11. GitHub candidate ZIP SHA256: `F4734FBE1712D12B21607E049EF4B3A7680F8705FAEBE2DE9E8BE2C6D5183163`.
+12. Gallery candidate NuGet SHA256: `430661858408FCACA950E15C375BB75296C7E1802AA355852A442333C6231BAC`.
+13. PowerShell Gallery publication: not started.
 
 ## Changes in v0.15.0
 
