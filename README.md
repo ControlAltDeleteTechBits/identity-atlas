@@ -10,6 +10,8 @@ Current community preview: 0.15.1-preview.1
 
 PowerShell Gallery version: 0.15.1-preview1
 
+PowerShell Gallery: https://www.powershellgallery.com/packages/IdentityAtlas/0.15.1-preview1
+
 Identity Atlas is an independent community project. It is not a Microsoft product and is not affiliated with, endorsed by or sponsored by Microsoft.
 
 ## Purpose
@@ -62,7 +64,7 @@ Import-Module IdentityAtlas
 
 The preview switch is required until Identity Atlas reaches a stable release. The GitHub release remains the independently verifiable installation option.
 
-Maintainer publication procedure: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/docs/POWERSHELL-GALLERY-RELEASE.md
+Maintainer publication procedure: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/POWERSHELL-GALLERY-RELEASE.md
 
 ## Install from a release
 

@@ -10,12 +10,12 @@ Publisher: Control Alt Delete Tech Bits
 
 ## Current status
 
-1. The `IdentityAtlas` package name is available at the time of preparation.
-2. The Gallery manifest metadata passes its source gate.
-3. The matching GitHub ZIP and Gallery NuGet package build locally.
-4. The PowerShell, JavaScript, release security and Gallery package tests pass.
-5. No package has been submitted to the PowerShell Gallery.
-6. A publisher account and privately handled API key are still required.
+1. `IdentityAtlas` version `0.15.1-preview1` was published on 4 August 2026.
+2. The publisher is `ControlAltDeleteTechBits`.
+3. The matching GitHub prerelease is immutable and contains the verified ZIP and SHA256 file.
+4. The PowerShell, JavaScript, release security and Gallery package tests passed.
+5. The public Gallery package hash matches the tested local NuGet package.
+6. Public discovery, dependency acquisition and isolated import passed after publication.
 
 ## Publisher account
 
@@ -92,7 +92,7 @@ $galleryKey = [System.Net.NetworkCredential]::new('', $galleryKeySecure).Passwor
 
 try {
     Publish-PSResource `
-        -Nupkg .\Gallery\IdentityAtlas.0.15.1-preview1.nupkg `
+        -NupkgPath .\Gallery\IdentityAtlas.0.15.1-preview1.nupkg `
         -Repository PSGallery `
         -ApiKey $galleryKey `
         -WhatIf
@@ -133,3 +133,15 @@ Install-PSResource IdentityAtlas `
 ## Publication boundary
 
 The initial Gallery release is manual. GitHub Actions has read-only repository permissions and contains no PowerShell Gallery API key. Automated publishing can be considered only after the manual process has been proven and a separately reviewed secret-handling design is approved.
+
+## Publication record
+
+1. Gallery page: https://www.powershellgallery.com/packages/IdentityAtlas/0.15.1-preview1
+2. Published at: 4 August 2026 at 12:21:35 UTC.
+3. Published NuGet SHA256: `D53795D21C6B90A9BD45EBED480676A0D7B056BD962BAA6684AAFC6193E850DF`.
+4. Matching GitHub release: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.15.1-preview.1
+5. Matching GitHub ZIP SHA256: `3086FB203C0C3E174EE0D7FBC185DDBDC58BFFE6C61180E4A091280663AF4875`.
+6. The public NuGet package was downloaded again after publication and matched the tested package hash.
+7. `Microsoft.Graph.Authentication` version 2.39.0 was acquired as the compatible dependency during the isolated installation test.
+8. The isolated import exported `Compare-IdentityAtlas`, `Connect-IdentityAtlas`, `Export-IdentityAtlas` and `Invoke-IdentityAtlas`.
+9. The temporary API key file was protected with Windows user encryption and deleted immediately after publication. No Gallery credential is stored in the repository or GitHub Actions.

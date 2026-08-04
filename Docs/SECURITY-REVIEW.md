@@ -2,9 +2,9 @@
 
 Date: 4 August 2026
 
-Reviewed version: 0.15.1 PowerShell Gallery preview candidate
+Reviewed version: 0.15.1 PowerShell Gallery preview
 
-Review status: passed for local preview use
+Review status: passed and published for local preview use
 
 ## 1. Security boundary
 

@@ -1,6 +1,6 @@
 # Identity Atlas v0.15.1 preview 1
 
-Release status: PowerShell Gallery release candidate
+Release status: published GitHub and PowerShell Gallery preview
 
 ## Summary
 
@@ -13,7 +13,7 @@ Identity Atlas v0.15.1 prepares the existing Microsoft Entra relationship explor
 3. The module declares PowerShell Core compatibility and PowerShell 7 as its minimum version.
 4. Gallery metadata includes the approved Identity Atlas branding, project link, MIT Licence link, tags and release notes.
 
-After Gallery publication, install the preview with:
+Install the published preview with:
 
 ```powershell
 Install-PSResource IdentityAtlas -Prerelease -Scope CurrentUser -TrustRepository
@@ -33,4 +33,4 @@ Identity Atlas continues to request delegated, read-only Microsoft Graph permiss
 
 ## Publication status
 
-This candidate has not yet been published to the PowerShell Gallery. Publication requires a Control Alt Delete Tech Bits publisher account and a privately handled Gallery API key.
+The preview is published at https://www.powershellgallery.com/packages/IdentityAtlas/0.15.1-preview1 by Control Alt Delete Tech Bits.
