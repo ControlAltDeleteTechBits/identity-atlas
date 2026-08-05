@@ -4,7 +4,7 @@ This file records user-facing changes. Identity Atlas uses semantic versioning f
 
 ## 0.16.0-preview.1
 
-Release status: in development
+Release date: 5 August 2026
 
 ### Added
 

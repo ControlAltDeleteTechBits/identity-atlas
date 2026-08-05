@@ -6,13 +6,11 @@ Publisher: Control Alt Delete Tech Bits
 
 Lead maintainer: Mark Oldham
 
-Current community preview: 0.15.1-preview.1
+Current community preview: 0.16.0-preview.1
 
-Development version: 0.16.0-preview1
+PowerShell Gallery version: 0.16.0-preview1
 
-PowerShell Gallery version: 0.15.1-preview1
-
-PowerShell Gallery: https://www.powershellgallery.com/packages/IdentityAtlas/0.15.1-preview1
+PowerShell Gallery: https://www.powershellgallery.com/packages/IdentityAtlas/0.16.0-preview1
 
 Identity Atlas is an independent community project. It is not a Microsoft product and is not affiliated with, endorsed by or sponsored by Microsoft.
 
@@ -77,7 +75,7 @@ Maintainer publication procedure: https://github.com/ControlAltDeleteTechBits/id
 
 ## Install from a release
 
-Current preview: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.15.1-preview.1
+Current preview: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.16.0-preview.1
 
 1. Download the versioned ZIP and matching SHA256 file from GitHub Releases.
 2. Verify the checksum before extracting the ZIP.
@@ -87,8 +85,8 @@ Current preview: https://github.com/ControlAltDeleteTechBits/identity-atlas/rele
 Example checksum verification:
 
 ```powershell
-$expected = (Get-Content .\IdentityAtlas-v0.15.1-preview.1-SHA256.txt).Split(' ')[0]
-$actual = (Get-FileHash .\IdentityAtlas-v0.15.1-preview.1.zip -Algorithm SHA256).Hash
+$expected = (Get-Content .\IdentityAtlas-v0.16.0-preview.1-SHA256.txt).Split(' ')[0]
+$actual = (Get-FileHash .\IdentityAtlas-v0.16.0-preview.1.zip -Algorithm SHA256).Hash
 if ($actual -ne $expected) {
     throw 'The downloaded Identity Atlas archive does not match its published checksum.'
 }
