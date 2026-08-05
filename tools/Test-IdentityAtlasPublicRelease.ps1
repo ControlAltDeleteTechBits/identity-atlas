@@ -149,13 +149,19 @@ Add-AtlasPublicReleaseCheck -Name 'PowerShell execution boundary' -Passed ($unsa
 )
 
 $graphRequestScript = Get-AtlasFileText -RelativePath 'Private\10-InvokeAtlasGraphRequest.ps1'
-$nonGetGraphCalls = @(
-    [regex]::Matches(
-        $graphRequestScript,
-        '(?im)Invoke-MgGraphRequest[^\r\n]*-Method\s+(?!GET\b)[A-Z]+'
-    )
+$graphBatchScript = Get-AtlasFileText -RelativePath 'Private\11-InvokeAtlasGraphBatch.ps1'
+$directRequestsAreReadOnly = (
+    $graphRequestScript -match '(?is)Invoke-MgGraphRequest\s+.*?-Method\s+GET\b' -and
+    $graphRequestScript -notmatch '(?i)-Method\s+(POST|PUT|PATCH|DELETE)\b'
 )
-Add-AtlasPublicReleaseCheck -Name 'Microsoft Graph request methods' -Passed ($nonGetGraphCalls.Count -eq 0) -Evidence 'The live Graph request wrapper only issues GET requests.'
+$batchRequestsAreReadOnly = (
+    $graphBatchScript -match '(?is)Invoke-MgGraphRequest\s+.*?-Method\s+POST\b\s+.*?-Uri\s+[''"]/v1\.0/\$batch[''"]' -and
+    $graphBatchScript -match "(?i)method\s*=\s*'GET'" -and
+    $graphBatchScript -notmatch "(?i)method\s*=\s*'(POST|PUT|PATCH|DELETE)'"
+)
+Add-AtlasPublicReleaseCheck -Name 'Microsoft Graph request methods' -Passed (
+    $directRequestsAreReadOnly -and $batchRequestsAreReadOnly
+) -Evidence 'Resource operations are GET requests. POST is restricted to the Microsoft Graph v1.0 JSON batch transport and every batch subrequest is GET.'
 
 $appJavaScript = Get-AtlasFileText -RelativePath 'Web\assets\app.js'
 $dataRuntimeJavaScript = Get-AtlasFileText -RelativePath 'Web\assets\data-runtime.js'

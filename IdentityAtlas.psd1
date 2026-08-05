@@ -1,6 +1,6 @@
 @{
     RootModule        = 'IdentityAtlas.psm1'
-    ModuleVersion     = '0.15.1'
+    ModuleVersion     = '0.16.0'
     GUID              = 'f0ce5f0e-34dc-4c59-9c12-3e35b581e955'
     Author            = 'Mark Oldham'
     CompanyName       = 'Control Alt Delete Tech Bits'
@@ -29,7 +29,7 @@
             LicenseUri   = 'https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/ControlAltDeleteTechBits/identity-atlas'
             IconUri      = 'https://raw.githubusercontent.com/ControlAltDeleteTechBits/identity-atlas/main/Web/assets/brand/identity-atlas-gallery-icon.svg'
-            ReleaseNotes = 'PowerShell Gallery preparation, automatic Microsoft Graph authentication dependency installation and repeatable package security checks. Release details: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.15.1-preview.1'
+            ReleaseNotes = 'Visible collector progress, elapsed time, request and object counts, read-only Graph batching, throttling messages, cancellation summaries, optional slower collector skips and automatic loopback report serving. Release details: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.16.0-preview.1'
             Prerelease   = 'preview1'
         }
     }

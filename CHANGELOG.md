@@ -2,6 +2,33 @@
 
 This file records user-facing changes. Identity Atlas uses semantic versioning for stable releases and an additional preview label before version 1.0.
 
+## 0.16.0-preview.1
+
+Release status: in development
+
+### Added
+
+1. Live collector progress with the active stage, current item count and total collector count.
+2. Elapsed time plus cumulative Microsoft Graph request, retry, object, relationship and evidence totals.
+3. Clear warnings when Microsoft Graph throttles or temporarily rejects a request, including the retry delay and attempt number.
+4. A cancellation summary covering elapsed time, completed collectors and collected totals.
+5. `-SkipSlowCollectors` and granular `-SkipCollector` options for deliberately reduced collections.
+6. `-BatchSize` control from 1 to 20 for authentication method, application role assignment and application owner requests.
+7. Automatic loopback report serving and browser opening when `-OpenReport` is used.
+8. Automatic selection of the next available permitted loopback port when the requested port is occupied.
+
+### Changed
+
+1. Per-user authentication method requests now use bounded Microsoft Graph JSON batches.
+2. Per-application role assignment and owner requests now use bounded Microsoft Graph JSON batches.
+3. The invocation result now includes duration, request and retry totals, skipped collector names, report URL and local server process ID.
+4. Deliberately skipped collection is recorded as partial coverage with an explicit warning and collector metric.
+
+### Security
+
+1. Resource operations remain GET only. POST is restricted to the Microsoft Graph `/v1.0/$batch` transport, and every batch subrequest is validated as GET against an allowed Microsoft Graph v1.0 path.
+2. The automatic web server remains bound to `127.0.0.1`, validates the report package and refuses automated fixture data.
+
 ## 0.15.1-preview.1
 
 Release date: 4 August 2026

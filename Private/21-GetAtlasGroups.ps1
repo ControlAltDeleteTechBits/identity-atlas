@@ -2,15 +2,23 @@ function Get-AtlasGroup {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [string] $TenantId
+        [string] $TenantId,
+
+        [switch] $SkipMembersAndOwners
     )
 
     $result = [AtlasCollectionResult]::new()
     $endpoint = '/v1.0/groups?$select=id,displayName,description,groupTypes,mailEnabled,securityEnabled,isAssignableToRole,membershipRule'
     $response = Invoke-AtlasGraphRequest -Uri $endpoint
     $nestedGroupMembershipCount = 0
+    if ($SkipMembersAndOwners) {
+        $result.Status = 'partial'
+        $result.Warnings.Add('Group member and owner collection was skipped by request.')
+    }
 
+    $groupIndex = 0
     foreach ($group in $response.Items) {
+        $groupIndex++
         $groupNode = New-AtlasNode -TenantId $TenantId -Id $group.id -Kind 'group' -DisplayName $group.displayName -Properties @{
             description = $group.description
             groupTypes = @($group.groupTypes)
@@ -27,13 +35,27 @@ function Get-AtlasGroup {
         }
         $result.Nodes.Add($groupNode)
 
+        if ($SkipMembersAndOwners) {
+            Update-AtlasProgressItem `
+                -CurrentItem $groupIndex `
+                -TotalItems $response.Items.Count `
+                -Status 'Group members and owners skipped'
+            continue
+        }
+
         $membersEndpoint = "/v1.0/groups/$($group.id)/members?`$select=id,displayName"
         try {
             $membersResponse = Invoke-AtlasGraphRequest -Uri $membersEndpoint
+            $response.Metrics.requestCount += $membersResponse.Metrics.requestCount
+            $response.Metrics.retryCount += $membersResponse.Metrics.retryCount
         }
         catch {
             $result.Status = 'partial'
             $result.Warnings.Add("Members could not be collected for group '$($group.displayName)': $(Get-AtlasSafeErrorDetail -ErrorRecord $_)")
+            Update-AtlasProgressItem `
+                -CurrentItem $groupIndex `
+                -TotalItems $response.Items.Count `
+                -Status 'Group member request failed'
             continue
         }
 
@@ -91,10 +113,16 @@ function Get-AtlasGroup {
         $ownersEndpoint = "/v1.0/groups/$($group.id)/owners?`$select=id,displayName"
         try {
             $ownersResponse = Invoke-AtlasGraphRequest -Uri $ownersEndpoint
+            $response.Metrics.requestCount += $ownersResponse.Metrics.requestCount
+            $response.Metrics.retryCount += $ownersResponse.Metrics.retryCount
         }
         catch {
             $result.Status = 'partial'
             $result.Warnings.Add("Owners could not be collected for group '$($group.displayName)': $(Get-AtlasSafeErrorDetail -ErrorRecord $_)")
+            Update-AtlasProgressItem `
+                -CurrentItem $groupIndex `
+                -TotalItems $response.Items.Count `
+                -Status 'Group owner request failed'
             continue
         }
 
@@ -140,11 +168,16 @@ function Get-AtlasGroup {
                 })
             )
         }
+        Update-AtlasProgressItem `
+            -CurrentItem $groupIndex `
+            -TotalItems $response.Items.Count `
+            -Status 'Group members and owners'
     }
 
     $result.Metrics = @{
         groupCount = $response.Items.Count
         nestedGroupMembershipCount = $nestedGroupMembershipCount
+        membersAndOwnersSkipped = [bool] $SkipMembersAndOwners
         requestCount = $response.Metrics.requestCount
         retryCount = $response.Metrics.retryCount
     }

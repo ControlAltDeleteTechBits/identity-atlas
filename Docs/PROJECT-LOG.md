@@ -4,7 +4,41 @@ Date: 4 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.15.1-preview.1 published to GitHub and PowerShell Gallery
+Implementation status: v0.15.1-preview.1 published; v0.16.0-preview.1 collection experience in development
+
+## v0.16.0 implementation progress
+
+1. Added visible collection progress for Core and Governance profiles.
+2. Added elapsed time, request, retry, object, relationship, evidence and per-item counts.
+3. Added readable Microsoft Graph throttling and temporary failure warnings.
+4. Added bounded Microsoft Graph JSON batches for per-user authentication methods and per-application role assignments and owners.
+5. Added a configurable batch size from 1 to 20, with a default of ten.
+6. Added cancellation summaries and prevented incomplete report generation after cancellation.
+7. Added `-SkipSlowCollectors` plus granular group, device, authentication and application skip options.
+8. Added automatic loopback serving and browser opening for `-OpenReport`.
+9. Added port availability checking and fallback from port 8766 to the next permitted local port.
+10. Added PowerShell coverage for batching, progress summaries, skip behaviour and live report serving.
+11. Updated the public security gate to permit POST only for the Microsoft Graph v1.0 batch transport with GET subrequests.
+
+## v0.16.0 validation status
+
+1. PowerShell tests: 64 passed, 0 failed.
+2. JavaScript graph worker tests: 14 passed, 0 failed.
+3. PowerShell Script Analyzer findings: 0.
+4. Source tenant-data and credential findings: 0.
+5. Public release package checks: 11 passed, 0 failed.
+6. PowerShell Gallery package checks: 16 passed, 0 failed.
+7. Local package discovery, save and clean import: passed.
+8. Browser checks against existing live development tenant data: passed.
+9. Browser console errors during Settings, identity search, object selection, graph drill-down, breadcrumb return, Applications, Roles and access explanation checks: 0.
+10. Loopback port fallback was confirmed when ports 8766 and 8767 were already occupied by valid Identity Atlas reports.
+11. The temporary browser validation report and server were removed after testing. Existing live reports were left unchanged.
+
+## v0.16.0 remaining roadmap
+
+1. Perform a fresh Core profile collection against the development tenant so the new JSON batch transport is exercised by Microsoft Graph rather than only mocked Graph responses.
+2. Review and commit the feature branch through the normal pull request process.
+3. Repeat the release and package checks from the merged main branch before publication.
 
 ## Current goal
 

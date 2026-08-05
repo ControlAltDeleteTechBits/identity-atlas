@@ -8,6 +8,8 @@ Lead maintainer: Mark Oldham
 
 Current community preview: 0.15.1-preview.1
 
+Development version: 0.16.0-preview1
+
 PowerShell Gallery version: 0.15.1-preview1
 
 PowerShell Gallery: https://www.powershellgallery.com/packages/IdentityAtlas/0.15.1-preview1
@@ -62,6 +64,13 @@ Install-PSResource IdentityAtlas -Prerelease -Scope CurrentUser -TrustRepository
 Import-Module IdentityAtlas
 ```
 
+PowerShellGet users can use:
+
+```powershell
+Install-Module -Name IdentityAtlas -AllowPrerelease -Scope CurrentUser
+Import-Module IdentityAtlas
+```
+
 The preview switch is required until Identity Atlas reaches a stable release. The GitHub release remains the independently verifiable installation option.
 
 Maintainer publication procedure: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/POWERSHELL-GALLERY-RELEASE.md
@@ -91,9 +100,39 @@ The live collectors require the Microsoft Graph PowerShell authentication module
 
 ```powershell
 Install-PSResource Microsoft.Graph.Authentication -Scope CurrentUser
-Import-Module .\IdentityAtlas.psd1
+Import-Module IdentityAtlas
 Connect-IdentityAtlas -UseDeviceCode
 Invoke-IdentityAtlas -OutputPath .\Output\DevTenant -OpenReport
+```
+
+During collection, PowerShell shows the active collector, elapsed time, Graph request and retry totals, collected object, relationship and evidence counts, and current item progress. `-OpenReport` starts a loopback-only server, selects port 8766 or the next available permitted port, then opens the interactive report in the default browser. The result object includes `ReportUrl` and `ServerProcessId` so the session can be checked or stopped later.
+
+The slower per-object collectors use Microsoft Graph JSON batches of ten GET requests by default. Set a smaller limit when required:
+
+```powershell
+Invoke-IdentityAtlas -OutputPath .\Output\DevTenant -OpenReport -BatchSize 5
+```
+
+For a faster, deliberately reduced collection, skip every slower per-object collector:
+
+```powershell
+Invoke-IdentityAtlas -OutputPath .\Output\DevTenant -OpenReport -SkipSlowCollectors
+```
+
+The generated report is marked as partial and records which collectors were skipped. Individual options are `GroupMembersAndOwners`, `DeviceOwners`, `AuthenticationMethods`, `ApplicationRoleAssignments` and `ApplicationOwners`:
+
+```powershell
+Invoke-IdentityAtlas `
+    -OutputPath .\Output\DevTenant `
+    -OpenReport `
+    -SkipCollector AuthenticationMethods,ApplicationOwners
+```
+
+Press Ctrl+C to cancel an active collection. Identity Atlas prints a cancellation summary containing the elapsed time, completed collector count, request and retry totals, and the object, relationship and evidence totals collected before cancellation. A cancelled run does not write an incomplete report package.
+
+If `-OpenReport` is omitted, the report is written without starting a server. A repository checkout can still start it manually with:
+
+```powershell
 .\tools\Start-IdentityAtlasDevServer.ps1 -Root .\Output\DevTenant -Port 8766
 ```
 

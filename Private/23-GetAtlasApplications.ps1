@@ -6,7 +6,14 @@ function Get-AtlasApplication {
 
         [Parameter(Mandatory)]
         [AllowEmptyCollection()]
-        [AtlasNode[]] $KnownNode
+        [AtlasNode[]] $KnownNode,
+
+        [switch] $SkipAppRoleAssignments,
+
+        [switch] $SkipOwners,
+
+        [ValidateRange(1, 20)]
+        [int] $BatchSize = 10
     )
 
     $result = [AtlasCollectionResult]::new()
@@ -61,6 +68,7 @@ function Get-AtlasApplication {
     $applicationKeyByAppId = @{}
     $appRoleNameByPrincipalId = @{}
     $ownerEdgeCount = 0
+    $appRoleAssignmentCount = 0
     $credentialCount = 0
     $apiPermissionCount = 0
 
@@ -218,82 +226,109 @@ function Get-AtlasApplication {
         }
     }
 
-    foreach ($servicePrincipal in $servicePrincipalResponse.Items) {
-        $assignmentsEndpoint = "/v1.0/servicePrincipals/$($servicePrincipal.id)/appRoleAssignedTo?`$select=id,principalId,principalDisplayName,principalType,resourceId,resourceDisplayName,appRoleId,createdDateTime"
-        try {
-            $assignmentResponse = Invoke-AtlasGraphRequest -Uri $assignmentsEndpoint
-            $servicePrincipalResponse.Metrics.requestCount += $assignmentResponse.Metrics.requestCount
-            $servicePrincipalResponse.Metrics.retryCount += $assignmentResponse.Metrics.retryCount
-        }
-        catch {
-            $result.Status = 'partial'
-            $result.Warnings.Add("App role assignments could not be collected for application '$($servicePrincipal.displayName)': $(Get-AtlasSafeErrorDetail -ErrorRecord $_)")
-            continue
-        }
+    $applicationLogicalRequestCount = 0
+    if ($SkipAppRoleAssignments) {
+        $result.Status = 'partial'
+        $result.Warnings.Add('Application role assignment collection was skipped by request.')
+        Update-AtlasProgressItem `
+            -CurrentItem $servicePrincipalResponse.Items.Count `
+            -TotalItems $servicePrincipalResponse.Items.Count `
+            -Status 'Application role assignments skipped'
+    }
+    elseif ($servicePrincipalResponse.Items.Count -gt 0) {
+        $servicePrincipalByBatchId = @{}
+        $assignmentRequest = @(
+            for ($index = 0; $index -lt $servicePrincipalResponse.Items.Count; $index++) {
+                $batchId = "assignment-$index"
+                $servicePrincipalByBatchId[$batchId] = $servicePrincipalResponse.Items[$index]
+                [pscustomobject] @{
+                    Id = $batchId
+                    Uri = "/v1.0/servicePrincipals/$($servicePrincipalResponse.Items[$index].id)/appRoleAssignedTo?`$select=id,principalId,principalDisplayName,principalType,resourceId,resourceDisplayName,appRoleId,createdDateTime"
+                }
+            }
+        )
+        $assignmentBatch = Invoke-AtlasGraphBatchGet `
+            -Request $assignmentRequest `
+            -BatchSize $BatchSize `
+            -ProgressStatus 'Application role assignments'
+        $servicePrincipalResponse.Metrics.requestCount += $assignmentBatch.Metrics.requestCount
+        $servicePrincipalResponse.Metrics.retryCount += $assignmentBatch.Metrics.retryCount
+        $applicationLogicalRequestCount += $assignmentBatch.Metrics.logicalRequestCount
 
-        foreach ($assignment in $assignmentResponse.Items) {
-            if (-not $servicePrincipalKeyById.ContainsKey($assignment.resourceId)) {
+        foreach ($assignmentResponse in $assignmentBatch.Responses) {
+            $servicePrincipal = $servicePrincipalByBatchId[$assignmentResponse.Id]
+            $assignmentsEndpoint = $assignmentResponse.Uri
+            if ($assignmentResponse.StatusCode -lt 200 -or $assignmentResponse.StatusCode -ge 300) {
                 $result.Status = 'partial'
-                $result.Warnings.Add("Application '$($assignment.resourceId)' was referenced by an app role assignment but was not returned.")
+                $result.Warnings.Add("App role assignments could not be collected for application '$($servicePrincipal.displayName)': $($assignmentResponse.ErrorMessage)")
                 continue
             }
 
-            if ($keyById.ContainsKey($assignment.principalId)) {
-                $principalKey = $keyById[$assignment.principalId]
-            }
-            else {
-                $principalKind = switch ($assignment.principalType) {
-                    'User' { 'user' }
-                    'Group' { 'group' }
-                    'ServicePrincipal' { 'servicePrincipal' }
-                    default { 'directoryObject' }
+            foreach ($assignment in $assignmentResponse.Items) {
+                if (-not $servicePrincipalKeyById.ContainsKey($assignment.resourceId)) {
+                    $result.Status = 'partial'
+                    $result.Warnings.Add("Application '$($assignment.resourceId)' was referenced by an app role assignment but was not returned.")
+                    continue
                 }
-                $principalDisplayName = if ($assignment.principalDisplayName) { $assignment.principalDisplayName } else { $assignment.principalId }
-                $principalNode = New-AtlasNode -TenantId $TenantId -Id $assignment.principalId -Kind $principalKind -DisplayName $principalDisplayName -Status 'unresolved' -Source @{
-                    provider = 'microsoftGraph'
-                    apiVersion = 'v1.0'
-                    resourcePath = "/directoryObjects/$($assignment.principalId)"
-                    collector = 'applications'
+
+                if ($keyById.ContainsKey($assignment.principalId)) {
+                    $principalKey = $keyById[$assignment.principalId]
                 }
-                $result.Nodes.Add($principalNode)
-                $principalKey = $principalNode.Key
-            }
+                else {
+                    $principalKind = switch ($assignment.principalType) {
+                        'User' { 'user' }
+                        'Group' { 'group' }
+                        'ServicePrincipal' { 'servicePrincipal' }
+                        default { 'directoryObject' }
+                    }
+                    $principalDisplayName = if ($assignment.principalDisplayName) { $assignment.principalDisplayName } else { $assignment.principalId }
+                    $principalNode = New-AtlasNode -TenantId $TenantId -Id $assignment.principalId -Kind $principalKind -DisplayName $principalDisplayName -Status 'unresolved' -Source @{
+                        provider = 'microsoftGraph'
+                        apiVersion = 'v1.0'
+                        resourcePath = "/directoryObjects/$($assignment.principalId)"
+                        collector = 'applications'
+                    }
+                    $result.Nodes.Add($principalNode)
+                    $principalKey = $principalNode.Key
+                }
 
-            $appRoleName = $null
-            if (
-                $appRoleNameByPrincipalId.ContainsKey($assignment.resourceId) -and
-                $appRoleNameByPrincipalId[$assignment.resourceId].ContainsKey($assignment.appRoleId)
-            ) {
-                $appRoleName = $appRoleNameByPrincipalId[$assignment.resourceId][$assignment.appRoleId]
-            }
+                $appRoleName = $null
+                if (
+                    $appRoleNameByPrincipalId.ContainsKey($assignment.resourceId) -and
+                    $appRoleNameByPrincipalId[$assignment.resourceId].ContainsKey($assignment.appRoleId)
+                ) {
+                    $appRoleName = $appRoleNameByPrincipalId[$assignment.resourceId][$assignment.appRoleId]
+                }
 
-            $assignmentKind = if ($nodeById.ContainsKey($assignment.principalId) -and $nodeById[$assignment.principalId].Kind -eq 'group') {
-                'group'
-            }
-            else {
-                'direct'
-            }
+                $assignmentKind = if ($nodeById.ContainsKey($assignment.principalId) -and $nodeById[$assignment.principalId].Kind -eq 'group') {
+                    'group'
+                }
+                else {
+                    'direct'
+                }
 
-            $evidence = New-AtlasEvidence -TenantId $TenantId -Collector 'applications' -Endpoint $assignmentsEndpoint -SourceObjectId $assignment.id -Fields @{
-                principalId = $assignment.principalId
-                principalType = $assignment.principalType
-                resourceId = $assignment.resourceId
-                appRoleId = $assignment.appRoleId
-                appRoleDisplayName = $appRoleName
-                createdDateTime = $assignment.createdDateTime
-            }
-            $result.Evidence.Add($evidence)
-            $result.Edges.Add(
-                (New-AtlasEdge -TenantId $TenantId -From $principalKey -To $servicePrincipalKeyById[$assignment.resourceId] -Relationship 'assignedAppRole' -State @{
-                    assignment = $assignmentKind
+                $evidence = New-AtlasEvidence -TenantId $TenantId -Collector 'applications' -Endpoint $assignmentsEndpoint -SourceObjectId $assignment.id -Fields @{
+                    principalId = $assignment.principalId
                     principalType = $assignment.principalType
+                    resourceId = $assignment.resourceId
                     appRoleId = $assignment.appRoleId
                     appRoleDisplayName = $appRoleName
                     createdDateTime = $assignment.createdDateTime
-                } -EvidenceIds @($evidence.Key) -Source @{
-                    collector = 'applications'
-                })
-            )
+                }
+                $result.Evidence.Add($evidence)
+                $result.Edges.Add(
+                    (New-AtlasEdge -TenantId $TenantId -From $principalKey -To $servicePrincipalKeyById[$assignment.resourceId] -Relationship 'assignedAppRole' -State @{
+                        assignment = $assignmentKind
+                        principalType = $assignment.principalType
+                        appRoleId = $assignment.appRoleId
+                        appRoleDisplayName = $appRoleName
+                        createdDateTime = $assignment.createdDateTime
+                    } -EvidenceIds @($evidence.Key) -Source @{
+                        collector = 'applications'
+                    })
+                )
+                $appRoleAssignmentCount++
+            }
         }
     }
 
@@ -315,19 +350,43 @@ function Get-AtlasApplication {
         }
     }
 
-    foreach ($target in $ownerTargets) {
-        try {
-            $ownerResponse = Invoke-AtlasGraphRequest -Uri $target.Endpoint
-            $servicePrincipalResponse.Metrics.requestCount += $ownerResponse.Metrics.requestCount
-            $servicePrincipalResponse.Metrics.retryCount += $ownerResponse.Metrics.retryCount
-        }
-        catch {
-            $result.Status = 'partial'
-            $result.Warnings.Add("Owners could not be collected for $($target.Name) '$($target.Id)': $(Get-AtlasSafeErrorDetail -ErrorRecord $_)")
-            continue
-        }
+    if ($SkipOwners) {
+        $result.Status = 'partial'
+        $result.Warnings.Add('Application and service principal owner collection was skipped by request.')
+        Update-AtlasProgressItem `
+            -CurrentItem $ownerTargets.Count `
+            -TotalItems $ownerTargets.Count `
+            -Status 'Application owners skipped'
+    }
+    elseif ($ownerTargets.Count -gt 0) {
+        $ownerTargetByBatchId = @{}
+        $ownerRequest = @(
+            for ($index = 0; $index -lt $ownerTargets.Count; $index++) {
+                $batchId = "owner-$index"
+                $ownerTargetByBatchId[$batchId] = $ownerTargets[$index]
+                [pscustomobject] @{
+                    Id = $batchId
+                    Uri = $ownerTargets[$index].Endpoint
+                }
+            }
+        )
+        $ownerBatch = Invoke-AtlasGraphBatchGet `
+            -Request $ownerRequest `
+            -BatchSize $BatchSize `
+            -ProgressStatus 'Application owners'
+        $servicePrincipalResponse.Metrics.requestCount += $ownerBatch.Metrics.requestCount
+        $servicePrincipalResponse.Metrics.retryCount += $ownerBatch.Metrics.retryCount
+        $applicationLogicalRequestCount += $ownerBatch.Metrics.logicalRequestCount
 
-        foreach ($owner in $ownerResponse.Items) {
+        foreach ($ownerResponse in $ownerBatch.Responses) {
+            $target = $ownerTargetByBatchId[$ownerResponse.Id]
+            if ($ownerResponse.StatusCode -lt 200 -or $ownerResponse.StatusCode -ge 300) {
+                $result.Status = 'partial'
+                $result.Warnings.Add("Owners could not be collected for $($target.Name) '$($target.Id)': $($ownerResponse.ErrorMessage)")
+                continue
+            }
+
+            foreach ($owner in $ownerResponse.Items) {
             $ownerId = Get-AtlasResponseProperty -InputObject $owner -Name 'id'
             if (-not $ownerId) {
                 continue
@@ -374,17 +433,22 @@ function Get-AtlasApplication {
                     collector = 'applications'
                 })
             )
-            $ownerEdgeCount++
+                $ownerEdgeCount++
+            }
         }
     }
 
     $result.Metrics = @{
         servicePrincipalCount = $servicePrincipalResponse.Items.Count
         applicationCount = $applicationResponse.Items.Count
-        appRoleAssignmentCount = $result.Edges.Count
+        appRoleAssignmentCount = $appRoleAssignmentCount
         ownerCount = $ownerEdgeCount
         credentialCount = $credentialCount
         apiPermissionCount = $apiPermissionCount
+        applicationLogicalRequestCount = $applicationLogicalRequestCount
+        appRoleAssignmentsSkipped = [bool] $SkipAppRoleAssignments
+        ownersSkipped = [bool] $SkipOwners
+        batchSize = $BatchSize
         requestCount = $servicePrincipalResponse.Metrics.requestCount + $applicationResponse.Metrics.requestCount
         retryCount = $servicePrincipalResponse.Metrics.retryCount + $applicationResponse.Metrics.retryCount
     }

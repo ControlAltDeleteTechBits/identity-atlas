@@ -2,9 +2,9 @@
 
 Date: 4 August 2026
 
-Reviewed version: 0.15.1 PowerShell Gallery preview
+Reviewed version: 0.16.0 PowerShell Gallery preview candidate
 
-Review status: passed and published for local preview use
+Review status: local candidate passed; publication pending
 
 ## 1. Security boundary
 
@@ -180,7 +180,7 @@ Coverage is complete only when the permission assessment and every collector com
 
 ## 7. Microsoft Graph request controls
 
-1. Collection uses GET requests only.
+1. Resource collection uses GET requests. The only POST is to the Microsoft Graph `/v1.0/$batch` transport, whose subrequests are restricted to GET.
 2. Relative request paths must begin with `/v1.0/` or `/beta/`.
 3. Absolute pagination links must use HTTPS.
 4. Pagination hosts are limited to documented Microsoft Graph hosts for the global, United States Government and China operated clouds.
@@ -234,12 +234,29 @@ Review states, layout preferences and pinned object identifiers are stored in br
 
 1. A person who can read the report files can read the collected directory evidence. Identity Atlas does not encrypt reports.
 2. Browser local storage can retain tenant identifiers, review states and pins until site data is cleared.
-3. Delegated consent is currently granted to the Microsoft Graph Command Line Tools client used by Microsoft Graph PowerShell. A dedicated Identity Atlas application registration remains a decision for a later release.
+3. Delegated consent is currently granted to the Microsoft Graph Command Line Tools client used by Microsoft Graph PowerShell. That shared client can return write-capable scopes granted in an earlier session. Identity Atlas does not request or use them, and v0.16.0 warns when they are present. A dedicated Identity Atlas application registration remains a decision for a later release.
 4. The local server does not attempt to resolve or reject every possible filesystem reparse point. The report root must remain administrator controlled.
 5. Report exports can be shared outside Identity Atlas controls.
 6. One live authentication method request previously returned HTTP 403 because delegated scope and administrator role requirements are both enforced by Microsoft Graph.
 
 ## 13. Validation evidence
+
+The 0.16.0 local release candidate passed:
+
+```text
+PowerShell tests: 64 passed, 0 failed
+JavaScript graph worker tests: 14 passed, 0 failed
+PSScriptAnalyzer findings: 0
+Source safety findings: 0
+Public release package checks: 11 passed, 0 failed
+PowerShell Gallery package checks: 16 passed, 0 failed
+Local PSResourceGet discovery, save and clean import: passed
+Browser console errors: 0
+Release archive SHA256: 937F8380318D716EBC16A451BB0929237FF65EEBC8B79893B0F0B3969C8CE4B9
+Gallery package SHA256: F6E049EC0528D97B12553972B8CB651C5D8C592AE5A177C6C3CDAFEDD0F54D3E
+```
+
+The browser checks used an existing live development tenant report repackaged with the v0.16.0 web assets. Settings, identity search, selection, relationship layout, authentication method drill-down, breadcrumb return, Applications, Roles and access explanation passed. The temporary repackaged report and server were removed. A fresh live Core collection remains required before publication to exercise the new Graph JSON batch transport against Microsoft Graph.
 
 The 0.15.1 PowerShell Gallery candidate passed:
 

@@ -84,9 +84,9 @@ Add-AtlasGalleryCheck -Name 'Module identity' -Passed (
 ) -Evidence 'The package name, author and publisher match the approved Identity Atlas metadata.'
 
 Add-AtlasGalleryCheck -Name 'Preview version' -Passed (
-    $manifest.ModuleVersion -eq '0.15.1' -and
+    $manifest.ModuleVersion -eq '0.16.0' -and
     $psData.Prerelease -eq 'preview1'
-) -Evidence 'The manifest resolves to PowerShell Gallery version 0.15.1-preview1.'
+) -Evidence 'The manifest resolves to PowerShell Gallery version 0.16.0-preview1.'
 
 Add-AtlasGalleryCheck -Name 'PowerShell edition' -Passed (
     @($manifest.CompatiblePSEditions).Count -eq 1 -and
@@ -112,7 +112,7 @@ Add-AtlasGalleryCheck -Name 'Gallery icon' -Passed (
 
 Add-AtlasGalleryCheck -Name 'Release notes metadata' -Passed (
     -not [string]::IsNullOrWhiteSpace($psData.ReleaseNotes) -and
-    $psData.ReleaseNotes -match 'v0\.15\.1-preview\.1'
+    $psData.ReleaseNotes -match 'v0\.16\.0-preview\.1'
 ) -Evidence 'The package metadata links to the matching GitHub preview release.'
 
 if ($SkipPackage) {
@@ -138,7 +138,7 @@ if (-not [System.IO.File]::Exists($resolvedPackagePath)) {
     throw "PowerShell Gallery package does not exist: $resolvedPackagePath"
 }
 
-$expectedPackageName = 'IdentityAtlas.0.15.1-preview1.nupkg'
+$expectedPackageName = 'IdentityAtlas.0.16.0-preview1.nupkg'
 Add-AtlasGalleryCheck -Name 'Package filename' -Passed (
     [System.IO.Path]::GetFileName($resolvedPackagePath) -ceq $expectedPackageName
 ) -Evidence "The package filename is $expectedPackageName."
@@ -195,7 +195,7 @@ Add-AtlasGalleryCheck -Name 'Package content boundary' -Passed (
 
 Add-AtlasGalleryCheck -Name 'NuGet package identity' -Passed (
     (Get-AtlasNuspecValue -Nuspec $nuspec -Name 'id') -eq 'IdentityAtlas' -and
-    (Get-AtlasNuspecValue -Nuspec $nuspec -Name 'version') -eq '0.15.1-preview1' -and
+    (Get-AtlasNuspecValue -Nuspec $nuspec -Name 'version') -eq '0.16.0-preview1' -and
     (Get-AtlasNuspecValue -Nuspec $nuspec -Name 'authors') -eq 'Mark Oldham'
 ) -Evidence 'The generated NuGet metadata contains the approved package name, version and author.'
 
@@ -230,7 +230,7 @@ try {
 
     $foundPackage = Find-PSResource `
         -Name IdentityAtlas `
-        -Version '0.15.1-preview1' `
+        -Version '0.16.0-preview1' `
         -Prerelease `
         -Repository $localRepositoryName `
         -ErrorAction Stop
@@ -238,7 +238,7 @@ try {
     [System.IO.Directory]::CreateDirectory($localSaveRoot) | Out-Null
     $savedPackage = Save-PSResource `
         -Name IdentityAtlas `
-        -Version '0.15.1-preview1' `
+        -Version '0.16.0-preview1' `
         -Prerelease `
         -Repository $localRepositoryName `
         -Path $localSaveRoot `
@@ -248,7 +248,7 @@ try {
 
     Add-AtlasGalleryCheck -Name 'Local repository discovery' -Passed (
         $foundPackage.Name -eq 'IdentityAtlas' -and
-        $foundPackage.Version.ToString() -eq '0.15.1' -and
+        $foundPackage.Version.ToString() -eq '0.16.0' -and
         $foundPackage.Prerelease -eq 'preview1' -and
         $savedPackage.Name -eq 'IdentityAtlas' -and
         @(Get-ChildItem -LiteralPath $localSaveRoot -Recurse -File).Count -gt 0

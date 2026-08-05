@@ -46,6 +46,23 @@ function Get-AtlasRecommendedScope {
     )
 }
 
+function Get-AtlasAdditionalWriteScope {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [string[]] $ContextScope
+    )
+
+    return @(
+        $ContextScope |
+            Where-Object {
+                -not [string]::IsNullOrWhiteSpace($_) -and
+                $_ -match '(?i)(^|[._-])(readwrite|write|manage|create|update|delete|send|accessasuser|full_access)([._-]|$)'
+            } |
+            Sort-Object -Unique
+    )
+}
+
 function Get-AtlasPermissionAssessment {
     [CmdletBinding()]
     param(
@@ -206,15 +223,27 @@ function Invoke-AtlasCollector {
         [string] $DisplayName,
 
         [Parameter(Mandatory)]
-        [scriptblock] $Collector
+        [scriptblock] $Collector,
+
+        [ValidateRange(1, 30)]
+        [int] $Step = 1
     )
+
+    Start-AtlasProgressStep -Name $Name -DisplayName $DisplayName -Step $Step
 
     try {
         $result = & $Collector
         if ($null -eq $result) {
             throw "The '$Name' collector returned no result."
         }
+        Complete-AtlasProgressStep -Result $result
         return $result
+    }
+    catch [System.Management.Automation.PipelineStoppedException] {
+        throw
+    }
+    catch [System.OperationCanceledException] {
+        throw
     }
     catch {
         $result = [AtlasCollectionResult]::new()
@@ -225,6 +254,7 @@ function Invoke-AtlasCollector {
             retryCount = 0
             failed = $true
         }
+        Complete-AtlasProgressStep -Result $result
         return $result
     }
 }

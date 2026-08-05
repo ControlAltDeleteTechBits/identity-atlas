@@ -58,6 +58,7 @@ function Invoke-AtlasGraphRequest {
         while ($null -eq $response) {
             try {
                 $requestCount++
+                Update-AtlasProgressRequest -RequestIncrement 1 -Status 'Requesting Microsoft Graph'
                 $response = Invoke-MgGraphRequest -Method GET -Uri $nextLink -Headers $Headers -OutputType PSObject
             }
             catch {
@@ -108,6 +109,30 @@ function Invoke-AtlasGraphRequest {
                     $retryAfterSeconds = [math]::Min(60, [math]::Pow(2, $attempt))
                 }
 
+                $retryReason = if ($statusCode -eq 429) {
+                    'Microsoft Graph throttled the request'
+                }
+                else {
+                    "Microsoft Graph returned HTTP $statusCode"
+                }
+                Update-AtlasProgressRequest `
+                    -RetryIncrement 1 `
+                    -Status "$retryReason. Retrying in $retryAfterSeconds seconds"
+                $progressContext = Get-Variable `
+                    -Name IdentityAtlasProgressContext `
+                    -Scope Script `
+                    -ValueOnly `
+                    -ErrorAction SilentlyContinue
+                $collectorDisplayName = if ($progressContext -and $progressContext.CollectorDisplayName) {
+                    $progressContext.CollectorDisplayName
+                }
+                else {
+                    'Microsoft Graph data'
+                }
+                Write-Warning (
+                    "$retryReason while collecting $collectorDisplayName. " +
+                    "Retrying in $retryAfterSeconds seconds (attempt $attempt of $MaximumRetryCount)."
+                )
                 Start-Sleep -Seconds $retryAfterSeconds
             }
         }
