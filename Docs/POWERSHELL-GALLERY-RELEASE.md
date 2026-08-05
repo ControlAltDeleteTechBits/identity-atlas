@@ -10,7 +10,7 @@ Publisher: Control Alt Delete Tech Bits
 
 ## Current status
 
-1. `IdentityAtlas` version `0.16.0-preview1` is prepared for controlled publication.
+1. `IdentityAtlas` version `0.16.0-preview1` was published on 5 August 2026.
 2. The publisher is `ControlAltDeleteTechBits`.
 3. The matching GitHub prerelease is immutable and contains the verified ZIP and SHA256 file.
 4. The PowerShell, JavaScript, release security and Gallery package tests passed.
@@ -133,6 +133,18 @@ Install-PSResource IdentityAtlas `
 ## Publication boundary
 
 The initial Gallery release is manual. GitHub Actions has read-only repository permissions and contains no PowerShell Gallery API key. Automated publishing can be considered only after the manual process has been proven and a separately reviewed secret-handling design is approved.
+
+## Current publication record
+
+1. Gallery page: https://www.powershellgallery.com/packages/IdentityAtlas/0.16.0-preview1
+2. Published at: 5 August 2026 at 08:50:55 UTC.
+3. Published NuGet SHA256: `3158CF992E0E5D3A3CC6E2655A35EC14DDF6B03F16750EA997F7E52526043812`.
+4. Matching GitHub release: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.16.0-preview.1
+5. Matching GitHub ZIP SHA256: `E1DEB2BE77923076C4AAA53FDA5BC55B3A90AD8D6CA0E525A0C94A0F4B14F132`.
+6. The public NuGet package was downloaded after publication and matched the tested package hash.
+7. Public discovery, isolated save, dependency acquisition and clean import passed.
+8. The isolated import exported `Compare-IdentityAtlas`, `Connect-IdentityAtlas`, `Export-IdentityAtlas` and `Invoke-IdentityAtlas`.
+9. The publishing key was restricted to new `IdentityAtlas` package versions and copied only through the local Windows clipboard. The clipboard was cleared immediately after submission.
 
 ## Previous publication record
 

@@ -1,21 +1,21 @@
 # Identity Atlas public release security test
 
-Date: 4 August 2026
+Date: 5 August 2026
 
-Current release: `v0.15.1-preview.1`
+Current release: `v0.16.0-preview.1`
 
 Current release result: passed
 
 Published GitHub release SHA256:
 
 ```text
-3086FB203C0C3E174EE0D7FBC185DDBDC58BFFE6C61180E4A091280663AF4875
+E1DEB2BE77923076C4AAA53FDA5BC55B3A90AD8D6CA0E525A0C94A0F4B14F132
 ```
 
 Published PowerShell Gallery package SHA256:
 
 ```text
-D53795D21C6B90A9BD45EBED480676A0D7B056BD962BAA6684AAFC6193E850DF
+3158CF992E0E5D3A3CC6E2655A35EC14DDF6B03F16750EA997F7E52526043812
 ```
 
 ## Purpose
@@ -26,7 +26,7 @@ Run it from the repository root:
 
 ```powershell
 .\tools\Test-IdentityAtlasPublicRelease.ps1 `
-    -ReleasePath .\Release\IdentityAtlas-v0.15.1-preview.1.zip
+    -ReleasePath .\Release\IdentityAtlas-v0.16.0-preview.1.zip
 ```
 
 GitHub Actions runs the same gate against the release package built by the workflow. CI skips the full history loop because the complete history is checked locally before publication.
@@ -42,7 +42,7 @@ GitHub Actions runs the same gate against the release package built by the workf
 7. Content Security Policy check: passed.
 8. GitHub Actions trust boundary: passed.
 9. Git history authorship check: passed.
-10. Complete Git history content scan: 28 snapshots passed.
+10. Complete Git history content scan: all available snapshots passed.
 11. Release package checksum: passed.
 12. Release archive content allowlist: passed.
 13. Extracted package safety and module-manifest validation: passed.
