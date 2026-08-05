@@ -6,11 +6,11 @@ Publisher: Control Alt Delete Tech Bits
 
 Lead maintainer: Mark Oldham
 
-Current community preview: 0.16.0-preview.1
+Current stable release: 1.0.0
 
-PowerShell Gallery version: 0.16.0-preview1
+PowerShell Gallery version: 1.0.0
 
-PowerShell Gallery: https://www.powershellgallery.com/packages/IdentityAtlas/0.16.0-preview1
+PowerShell Gallery: https://www.powershellgallery.com/packages/IdentityAtlas/1.0.0
 
 Identity Atlas is an independent community project. It is not a Microsoft product and is not affiliated with, endorsed by or sponsored by Microsoft.
 
@@ -20,7 +20,7 @@ Identity Atlas helps Microsoft Entra administrators understand how identity, app
 
 Generated reports contain sensitive administrative evidence. They are intended for an authorised administrator’s local device and must not be published.
 
-## Community preview
+## Stable release capabilities
 
 1. Canonical node, edge, evidence and report-manifest contracts.
 2. PowerShell collectors for users, groups, direct group memberships, group owners, app registrations, service principals, application owners, credential summaries, required API permissions, app role assignments, devices, registered device owners, user authentication methods, Conditional Access policies, named locations, authentication strengths, directory role definitions, active role assignments and eligible role assignments.
@@ -55,27 +55,27 @@ Node.js and Pester 5.7.1 are needed only for development and contribution testin
 
 ## Install from PowerShell Gallery
 
-PowerShell 7 users can install the Identity Atlas preview and its Microsoft Graph authentication dependency with:
+PowerShell 7 users can install Identity Atlas and its Microsoft Graph authentication dependency with:
 
 ```powershell
-Install-PSResource IdentityAtlas -Prerelease -Scope CurrentUser -TrustRepository
+Install-PSResource IdentityAtlas -Scope CurrentUser -TrustRepository
 Import-Module IdentityAtlas
 ```
 
 PowerShellGet users can use:
 
 ```powershell
-Install-Module -Name IdentityAtlas -AllowPrerelease -Scope CurrentUser
+Install-Module -Name IdentityAtlas -Scope CurrentUser
 Import-Module IdentityAtlas
 ```
 
-The preview switch is required until Identity Atlas reaches a stable release. The GitHub release remains the independently verifiable installation option.
+The GitHub release remains the independently verifiable installation option.
 
 Maintainer publication procedure: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/POWERSHELL-GALLERY-RELEASE.md
 
 ## Install from a release
 
-Current preview: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.16.0-preview.1
+Current release: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v1.0.0
 
 1. Download the versioned ZIP and matching SHA256 file from GitHub Releases.
 2. Verify the checksum before extracting the ZIP.
@@ -85,8 +85,8 @@ Current preview: https://github.com/ControlAltDeleteTechBits/identity-atlas/rele
 Example checksum verification:
 
 ```powershell
-$expected = (Get-Content .\IdentityAtlas-v0.16.0-preview.1-SHA256.txt).Split(' ')[0]
-$actual = (Get-FileHash .\IdentityAtlas-v0.16.0-preview.1.zip -Algorithm SHA256).Hash
+$expected = (Get-Content .\IdentityAtlas-v1.0.0-SHA256.txt).Split(' ')[0]
+$actual = (Get-FileHash .\IdentityAtlas-v1.0.0.zip -Algorithm SHA256).Hash
 if ($actual -ne $expected) {
     throw 'The downloaded Identity Atlas archive does not match its published checksum.'
 }
@@ -102,6 +102,18 @@ Import-Module IdentityAtlas
 Connect-IdentityAtlas -UseDeviceCode
 Invoke-IdentityAtlas -OutputPath .\Output\DevTenant -OpenReport
 ```
+
+For a strict least privilege consent boundary, use a dedicated Microsoft Entra application registration:
+
+```powershell
+Connect-IdentityAtlas `
+    -UseDeviceCode `
+    -ClientId '<application-client-id>' `
+    -TenantId '<directory-tenant-id>' `
+    -ContextScope Process
+```
+
+Setup guidance: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/DEDICATED-GRAPH-APPLICATION.md
 
 During collection, PowerShell shows the active collector, elapsed time, Graph request and retry totals, collected object, relationship and evidence counts, and current item progress. `-OpenReport` starts a loopback-only server, selects port 8766 or the next available permitted port, then opens the interactive report in the default browser. The result object includes `ReportUrl` and `ServerProcessId` so the session can be checked or stopped later.
 
@@ -182,7 +194,7 @@ Live reports contain administrative evidence, including tenant identifiers, user
 2. Do not publish live reports or commit them to source control.
 3. Stop the local server when review is complete.
 4. Delete reports according to the organisation's evidence retention policy.
-5. Clear browser site data on shared devices because pins and review states are tenant specific and persistent.
+5. Use Settings, Clear Identity Atlas browser data, when reviewing a report on a shared device.
 
 The report does not contain Microsoft Graph access tokens, passwords, client secret values or certificate material. The local server binds only to `127.0.0.1`, requires a valid Identity Atlas package marker and refuses sample fixture data.
 

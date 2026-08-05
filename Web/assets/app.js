@@ -383,6 +383,49 @@
     }
   }
 
+  function clearIdentityAtlasBrowserData(button) {
+    if (button.dataset.confirmClear !== 'true') {
+      button.dataset.confirmClear = 'true';
+      button.textContent = 'Click again to clear browser data';
+      window.setTimeout(() => {
+        if (button.dataset.confirmClear === 'true') {
+          delete button.dataset.confirmClear;
+          button.textContent = 'Clear Identity Atlas browser data';
+        }
+      }, 5000);
+      return;
+    }
+
+    try {
+      const storedKeys = [];
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key?.startsWith('identity-atlas:')) {
+          storedKeys.push(key);
+        }
+      }
+      for (const key of storedKeys) {
+        localStorage.removeItem(key);
+      }
+    }
+    catch {
+      // In-memory state is still cleared when browser storage is unavailable.
+    }
+
+    for (const key of Object.keys(reviewStates)) {
+      delete reviewStates[key];
+    }
+    pinnedKeys.clear();
+    document.body.classList.remove('evidence-first');
+    renderPinnedObjects();
+    updatePinButton();
+    delete button.dataset.confirmClear;
+    button.textContent = 'Browser data cleared';
+    window.setTimeout(() => {
+      button.textContent = 'Clear Identity Atlas browser data';
+    }, 3000);
+  }
+
   function applyLayoutSettings() {
     document.body.classList.toggle(
       'evidence-first',
@@ -1616,6 +1659,13 @@
       makeElement('h5', null, 'Security and data handling'),
       makeElement('p', 'path-narrative', securityStatus),
       makeElement('p', 'path-narrative', 'Treat this report as administrative evidence. It contains tenant identifiers and relationships. Keep it on an access-controlled device and delete exports when they are no longer required.')
+    );
+    const clearBrowserData = makeElement('button', 'secondary-button', 'Clear Identity Atlas browser data');
+    clearBrowserData.type = 'button';
+    clearBrowserData.addEventListener('click', () => clearIdentityAtlasBrowserData(clearBrowserData));
+    securitySection.append(
+      makeElement('p', 'path-narrative', 'Clears pins, review states and layout preferences stored by Identity Atlas on this local address.'),
+      clearBrowserData
     );
 
     const supportSection = makeElement('section', 'evidence-card');

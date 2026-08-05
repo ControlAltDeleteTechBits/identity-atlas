@@ -2,8 +2,9 @@
 param(
     [string] $OutputPath,
 
-    [ValidatePattern('^[0-9A-Za-z.-]+$')]
-    [string] $PrereleaseLabel = 'preview.1',
+    [ValidatePattern('^$|^[0-9A-Za-z.-]+$')]
+    [AllowEmptyString()]
+    [string] $PrereleaseLabel = '',
 
     [switch] $SkipTests,
 
@@ -36,7 +37,7 @@ if (-not $SkipTests) {
 $manifestPath = Join-Path $resolvedProjectRoot 'IdentityAtlas.psd1'
 $moduleManifest = Test-ModuleManifest -Path $manifestPath
 $moduleVersion = $moduleManifest.Version.ToString()
-$releaseVersion = "$moduleVersion-$PrereleaseLabel"
+$releaseVersion = if ($PrereleaseLabel) { "$moduleVersion-$PrereleaseLabel" } else { $moduleVersion }
 $archiveFileName = "IdentityAtlas-v$releaseVersion.zip"
 $checksumFileName = "IdentityAtlas-v$releaseVersion-SHA256.txt"
 

@@ -14,7 +14,7 @@ body:
     attributes:
       label: Identity Atlas version
       description: Use the version shown in the module manifest or report header.
-      placeholder: 0.16.0-preview.1
+      placeholder: 1.0.0
     validations:
       required: true
   - type: input

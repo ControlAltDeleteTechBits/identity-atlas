@@ -2,9 +2,11 @@
 
 ## Supported version
 
-Security fixes are currently applied to the latest preview only.
+Security fixes are applied to the latest stable release.
 
-Supported preview: 0.15.0
+Supported release: 1.0.0
+
+Version 0.16.0-preview.1 and earlier preview builds are unsupported. The standalone comparison HTML in 0.16.0-preview.1 could interpret a crafted Microsoft Entra string as browser script. The main interactive report was not affected. Upgrade to 1.0.0 before opening newly generated comparison HTML.
 
 ## Reporting a security issue
 

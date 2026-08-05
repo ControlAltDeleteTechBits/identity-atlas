@@ -2,20 +2,20 @@
 
 Date: 5 August 2026
 
-Current release: `v0.16.0-preview.1`
+Current release candidate: `v1.0.0`
 
-Current release result: passed
+Current release result: final validation pending
 
-Published GitHub release SHA256:
+Candidate GitHub release SHA256:
 
 ```text
-E1DEB2BE77923076C4AAA53FDA5BC55B3A90AD8D6CA0E525A0C94A0F4B14F132
+Pending final build
 ```
 
-Published PowerShell Gallery package SHA256:
+Candidate PowerShell Gallery package SHA256:
 
 ```text
-3158CF992E0E5D3A3CC6E2655A35EC14DDF6B03F16750EA997F7E52526043812
+Pending final build
 ```
 
 ## Purpose
@@ -26,7 +26,7 @@ Run it from the repository root:
 
 ```powershell
 .\tools\Test-IdentityAtlasPublicRelease.ps1 `
-    -ReleasePath .\Release\IdentityAtlas-v0.16.0-preview.1.zip
+    -ReleasePath .\Release\IdentityAtlas-v1.0.0.zip
 ```
 
 GitHub Actions runs the same gate against the release package built by the workflow. CI skips the full history loop because the complete history is checked locally before publication.
@@ -99,15 +99,15 @@ Microsoft documents `RoleEligibilitySchedule.Read.Directory` as the least-privil
 14. The active `Main branch protection` ruleset targets the default branch.
 15. The ruleset blocks deletion and force pushes.
 16. Pull requests, resolved conversations, an up-to-date branch and the `PowerShell and JavaScript tests` check are required.
-17. Repository administrators retain an emergency bypass for the one-maintainer project.
+17. Stable-release policy removes the permanent administrator bypass after the 1.0.0 merge.
 
 ## Residual risks
 
 1. Generated reports are not encrypted. Anyone who can read a report folder can read its administrative evidence.
-2. A report can retain tenant-specific pins and review states in browser site data.
+2. A report can retain tenant-specific pins and review states until the administrator uses the Settings clear-data control.
 3. An administrator can export evidence to files outside Identity Atlas controls.
 4. Microsoft Graph coverage depends on both consented scopes and the signed-in user’s Microsoft Entra role.
-5. The first preview has been tested in a development tenant; wider use may reveal tenant configurations not present in that test.
+5. Wider use may reveal tenant configurations not present in the development tenant and automated fixtures.
 
 These risks are disclosed in the README, security review and release notes. They do not justify adding write permissions or sending report data to a hosted service.
 
