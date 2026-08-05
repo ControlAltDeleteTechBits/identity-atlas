@@ -69,27 +69,26 @@ Install-Module -Name IdentityAtlas -Scope CurrentUser
 Import-Module IdentityAtlas
 ```
 
-The GitHub release remains the independently verifiable installation option.
+The published Gallery package was downloaded after publication and matched the locally tested package SHA256 exactly.
 
 Maintainer publication procedure: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/POWERSHELL-GALLERY-RELEASE.md
 
-## Install from a release
+## Inspect or run from the GitHub source release
 
 Current release: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v1.0.0
 
-1. Download the versioned ZIP and matching SHA256 file from GitHub Releases.
-2. Verify the checksum before extracting the ZIP.
-3. Extract the `IdentityAtlas` folder into an access-controlled location.
-4. Import `IdentityAtlas.psd1`.
+The immutable GitHub `v1.0.0` release contains GitHub's automatic source archives. It does not contain the separately packaged module ZIP. Use PowerShell Gallery for the supported installation route above.
 
-Example checksum verification:
+To inspect or run the repository source instead:
+
+1. Download GitHub's `Source code (zip)` archive.
+2. Extract it into an access-controlled location.
+3. Install the Microsoft Graph authentication dependency.
+4. Import `IdentityAtlas.psd1` from the extracted repository root.
 
 ```powershell
-$expected = (Get-Content .\IdentityAtlas-v1.0.0-SHA256.txt).Split(' ')[0]
-$actual = (Get-FileHash .\IdentityAtlas-v1.0.0.zip -Algorithm SHA256).Hash
-if ($actual -ne $expected) {
-    throw 'The downloaded Identity Atlas archive does not match its published checksum.'
-}
+Install-PSResource Microsoft.Graph.Authentication -Scope CurrentUser -TrustRepository
+Import-Module .\IdentityAtlas.psd1 -Force
 ```
 
 ## Run against a tenant
