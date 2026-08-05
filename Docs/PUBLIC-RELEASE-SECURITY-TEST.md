@@ -6,17 +6,19 @@ Current release candidate: `v1.0.0`
 
 Current release result: passed
 
-Candidate GitHub release SHA256:
+Locally validated GitHub release archive SHA256:
 
 ```text
 37FFE8D2CC7B5F110F797189DF8D9EA49A52C1F09B8E14EBD02BF4DC4D9219E4
 ```
 
-Candidate PowerShell Gallery package SHA256:
+Published PowerShell Gallery package SHA256:
 
 ```text
 4855C3E75A48ABAFB7771B564045F502D222C792F0A5D3EFBB0CE129FB75B04B
 ```
+
+The public Gallery download matched this hash exactly. GitHub release immutability was applied before the separate project ZIP and checksum could be attached to `v1.0.0`, so the validated GitHub archive remains a local release record rather than a public asset. GitHub's automatic source archives remain available.
 
 ## Purpose
 

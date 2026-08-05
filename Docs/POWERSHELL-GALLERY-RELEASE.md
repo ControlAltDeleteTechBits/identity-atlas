@@ -10,12 +10,13 @@ Publisher: Control Alt Delete Tech Bits
 
 ## Current status
 
-1. `IdentityAtlas` version `1.0.0` is the tested stable release candidate.
+1. `IdentityAtlas` version `1.0.0` is the published stable release.
 2. The publisher is `ControlAltDeleteTechBits`.
-3. The matching GitHub release will be immutable and contain the verified ZIP and SHA256 file.
+3. The matching GitHub release is immutable and points to the verified, signed `main` commit.
 4. The PowerShell, JavaScript, release security and Gallery package tests passed.
 5. The public Gallery package hash matches the tested local NuGet package.
 6. Public discovery, dependency acquisition and isolated import passed after publication.
+7. GitHub's automatic source archives are available. The separate project ZIP and checksum were not attached because the release was published before its assets were uploaded and immutability then blocked changes.
 
 ## Publisher account
 
@@ -73,9 +74,9 @@ Run the Gallery package gate independently:
 2. Confirm the GitHub validation workflow passes.
 3. Rebuild both packages from the final `main` commit.
 4. Run the complete Git history and package security gate.
-5. Create the immutable `v1.0.0` Git tag.
-6. Publish the stable GitHub release and its ZIP and SHA256 files.
-7. Download the public GitHub ZIP and confirm its checksum.
+5. Create the GitHub release as a draft and create its version tag.
+6. Upload and verify the release ZIP and SHA256 file while the release remains a draft.
+7. Publish the draft so GitHub applies release immutability only after both assets are present.
 8. Rebuild or verify the Gallery NuGet package against that exact ZIP.
 9. Enter the Gallery API key through a hidden PowerShell prompt.
 10. Run the Gallery publication command with `WhatIf` and review the output.
@@ -132,6 +133,18 @@ Install-PSResource IdentityAtlas `
 ## Publication boundary
 
 The initial Gallery release is manual. GitHub Actions has read-only repository permissions and contains no PowerShell Gallery API key. Automated publishing can be considered only after the manual process has been proven and a separately reviewed secret-handling design is approved.
+
+## Stable 1.0.0 publication record
+
+1. Gallery page: https://www.powershellgallery.com/packages/IdentityAtlas/1.0.0
+2. Published at: 5 August 2026 at 11:59:39 UTC.
+3. Published NuGet SHA256: `4855C3E75A48ABAFB7771B564045F502D222C792F0A5D3EFBB0CE129FB75B04B`.
+4. Matching GitHub release: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v1.0.0
+5. The public NuGet package was downloaded after publication and matched the tested local package hash exactly.
+6. Public discovery, dependency acquisition and isolated clean import passed.
+7. The isolated import exported `Compare-IdentityAtlas`, `Connect-IdentityAtlas`, `Export-IdentityAtlas` and `Invoke-IdentityAtlas`.
+8. The publishing key was restricted to new `IdentityAtlas` versions with a one-day expiry. Its copied value was cleared from the Windows clipboard after verification.
+9. The GitHub release is stable, latest, immutable and attached to a verified GitHub-signed commit. Its automatic source archives are available, but the separate module ZIP and checksum were not attached before publication.
 
 ## Previous 0.16.0 publication record
 

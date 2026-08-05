@@ -268,6 +268,10 @@ Release archive SHA256: 37FFE8D2CC7B5F110F797189DF8D9EA49A52C1F09B8E14EBD02BF4DC
 Gallery package SHA256: 4855C3E75A48ABAFB7771B564045F502D222C792F0A5D3EFBB0CE129FB75B04B
 ```
 
+The stable Gallery package was downloaded after publication and matched the validated Gallery package hash exactly. It was then saved with its declared Microsoft Graph dependency and imported in an isolated PowerShell module path. All four public commands were exported.
+
+The immutable GitHub release points to the verified, signed 1.0.0 commit. GitHub's automatic source archives are available. The separate project ZIP and checksum were not attached before the release became immutable, so the release procedure now requires a draft release and verified assets before publication.
+
 The browser checks used an isolated copy of an existing live development tenant report repackaged with the 1.0.0 web assets. Settings, browser-data clearing, identity search, selection, relationship layout, authentication method drill-down, breadcrumb return, Applications, Roles and access explanation passed with no console errors. The JSON batch transport has automated mocked Graph coverage but did not receive a fresh live Core collection during this release cycle.
 
 The 0.15.1 PowerShell Gallery candidate passed:

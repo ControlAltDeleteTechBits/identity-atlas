@@ -773,6 +773,22 @@ Published ZIP SHA256:
 E062075D5169AEF9E7566DADFE82A1C94058D79BA33C398B8C06CC8AB180CE20
 ```
 
+## Stable 1.0.0 release
+
+Published on 5 August 2026:
+
+1. Promoted Identity Atlas from community preview to stable version `1.0.0`.
+2. Merged the security remediation and release record through protected pull requests after PowerShell, JavaScript and CodeQL checks passed.
+3. Published the latest, non-preview, immutable GitHub release at https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v1.0.0.
+4. Confirmed the release commit is signed and verified by GitHub.
+5. Published stable PowerShell Gallery package `IdentityAtlas` version `1.0.0` at https://www.powershellgallery.com/packages/IdentityAtlas/1.0.0.
+6. Downloaded the public NuGet package and confirmed SHA256 `4855C3E75A48ABAFB7771B564045F502D222C792F0A5D3EFBB0CE129FB75B04B` matches the validated local package exactly.
+7. Saved the public package and its Microsoft Graph authentication dependency to an isolated module path and imported it successfully.
+8. Confirmed the clean import exports the four intended public commands.
+9. Cleared the temporary Gallery API key value from the Windows clipboard after publication verification.
+10. Restricted GitHub Actions to GitHub-owned actions, removed the permanent administrator ruleset bypass and required signed commits on `main`.
+11. Recorded that the separate GitHub project ZIP and checksum were not uploaded before release immutability was applied. Future immutable releases must remain drafts until every asset is uploaded and checked.
+
 ## Next recommended task
 
-Open a pinned preview-feedback issue, prepare the community launch announcement and begin the post-release monitoring record.
+Monitor the stable release, triage community feedback and prepare the first maintenance release only when a confirmed fix or improvement is ready.
