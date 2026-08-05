@@ -60,7 +60,7 @@ jobs:
         shell: pwsh
         run: |
           .\tools\Test-IdentityAtlasPublicRelease.ps1 `
-            -ReleasePath .\Release\IdentityAtlas-v0.15.1-preview.1.zip `
+            -ReleasePath .\Release\IdentityAtlas-v0.16.0-preview.1.zip `
             -SkipHistory
 
       - name: Build and test PowerShell Gallery package
@@ -68,4 +68,4 @@ jobs:
         run: |
           .\tools\New-IdentityAtlasGalleryPackage.ps1 `
             -OutputPath .\Gallery `
-            -ReleasePath .\Release\IdentityAtlas-v0.15.1-preview.1.zip
+            -ReleasePath .\Release\IdentityAtlas-v0.16.0-preview.1.zip

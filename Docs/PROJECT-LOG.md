@@ -1,10 +1,10 @@
 # Identity Atlas project log and roadmap
 
-Date: 4 August 2026
+Date: 5 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.15.1-preview.1 published; v0.16.0-preview.1 collection experience in development
+Implementation status: v0.15.1-preview.1 published; v0.16.0-preview.1 release candidate prepared
 
 ## v0.16.0 implementation progress
 
@@ -36,9 +36,9 @@ Implementation status: v0.15.1-preview.1 published; v0.16.0-preview.1 collection
 
 ## v0.16.0 remaining roadmap
 
-1. Perform a fresh Core profile collection against the development tenant so the new JSON batch transport is exercised by Microsoft Graph rather than only mocked Graph responses.
-2. Review and commit the feature branch through the normal pull request process.
-3. Repeat the release and package checks from the merged main branch before publication.
+1. Complete protected-branch review and GitHub Actions validation.
+2. Publish the GitHub pre-release and matching PowerShell Gallery package.
+3. Perform a clean public installation test from both distribution channels.
 
 ## Current goal
 

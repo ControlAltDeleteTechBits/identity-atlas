@@ -1,6 +1,6 @@
 # Identity Atlas v0.16.0 preview 1
 
-Release status: in development
+Release date: 5 August 2026
 
 Publisher: Control Alt Delete Tech Bits
 

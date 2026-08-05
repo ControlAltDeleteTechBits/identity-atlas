@@ -1,16 +1,16 @@
 # Identity Atlas PowerShell Gallery release procedure
 
-Date: 4 August 2026
+Date: 5 August 2026
 
-Target Gallery version: `0.15.1-preview1`
+Target Gallery version: `0.16.0-preview1`
 
-Matching GitHub version: `v0.15.1-preview.1`
+Matching GitHub version: `v0.16.0-preview.1`
 
 Publisher: Control Alt Delete Tech Bits
 
 ## Current status
 
-1. `IdentityAtlas` version `0.15.1-preview1` was published on 4 August 2026.
+1. `IdentityAtlas` version `0.16.0-preview1` is prepared for controlled publication.
 2. The publisher is `ControlAltDeleteTechBits`.
 3. The matching GitHub prerelease is immutable and contains the verified ZIP and SHA256 file.
 4. The PowerShell, JavaScript, release security and Gallery package tests passed.
@@ -49,7 +49,7 @@ Run the public release package gate:
 
 ```powershell
 .\tools\Test-IdentityAtlasPublicRelease.ps1 `
-    -ReleasePath .\Release\IdentityAtlas-v0.15.1-preview.1.zip
+    -ReleasePath .\Release\IdentityAtlas-v0.16.0-preview.1.zip
 ```
 
 Build the Gallery package from that exact release archive:
@@ -57,14 +57,14 @@ Build the Gallery package from that exact release archive:
 ```powershell
 .\tools\New-IdentityAtlasGalleryPackage.ps1 `
     -OutputPath .\Gallery `
-    -ReleasePath .\Release\IdentityAtlas-v0.15.1-preview.1.zip
+    -ReleasePath .\Release\IdentityAtlas-v0.16.0-preview.1.zip
 ```
 
 Run the Gallery package gate independently:
 
 ```powershell
 .\tools\Test-IdentityAtlasGalleryPackage.ps1 `
-    -PackagePath .\Gallery\IdentityAtlas.0.15.1-preview1.nupkg
+    -PackagePath .\Gallery\IdentityAtlas.0.16.0-preview1.nupkg
 ```
 
 ## Publication order
@@ -73,7 +73,7 @@ Run the Gallery package gate independently:
 2. Confirm the GitHub validation workflow passes.
 3. Rebuild both packages from the final `main` commit.
 4. Run the complete Git history and package security gate.
-5. Create the immutable `v0.15.1-preview.1` Git tag.
+5. Create the immutable `v0.16.0-preview.1` Git tag.
 6. Publish the GitHub prerelease and its ZIP and SHA256 files.
 7. Download the public GitHub ZIP and confirm its checksum.
 8. Rebuild or verify the Gallery NuGet package against that exact ZIP.
@@ -92,7 +92,7 @@ $galleryKey = [System.Net.NetworkCredential]::new('', $galleryKeySecure).Passwor
 
 try {
     Publish-PSResource `
-        -NupkgPath .\Gallery\IdentityAtlas.0.15.1-preview1.nupkg `
+        -NupkgPath .\Gallery\IdentityAtlas.0.16.0-preview1.nupkg `
         -Repository PSGallery `
         -ApiKey $galleryKey `
         -WhatIf
@@ -110,7 +110,7 @@ Remove `WhatIf` only after the dry run identifies the correct package, version a
 1. Confirm the Gallery page names Mark Oldham as author and Control Alt Delete Tech Bits as publisher.
 2. Confirm the project, licence, icon and release note links work.
 3. Confirm Microsoft.Graph.Authentication appears as a dependency.
-4. Confirm the Gallery displays `0.15.1-preview1` as a prerelease.
+4. Confirm the Gallery displays `0.16.0-preview1` as a prerelease.
 5. Find the package from a clean PowerShell 7 session.
 6. Install it into an isolated current-user test environment.
 7. Confirm all four Identity Atlas commands are exported.
@@ -121,10 +121,10 @@ Remove `WhatIf` only after the dry run identifies the correct package, version a
 Discovery and installation commands:
 
 ```powershell
-Find-PSResource IdentityAtlas -Version 0.15.1-preview1 -Prerelease -Repository PSGallery
+Find-PSResource IdentityAtlas -Version 0.16.0-preview1 -Prerelease -Repository PSGallery
 
 Install-PSResource IdentityAtlas `
-    -Version 0.15.1-preview1 `
+    -Version 0.16.0-preview1 `
     -Prerelease `
     -Scope CurrentUser `
     -TrustRepository
@@ -134,7 +134,7 @@ Install-PSResource IdentityAtlas `
 
 The initial Gallery release is manual. GitHub Actions has read-only repository permissions and contains no PowerShell Gallery API key. Automated publishing can be considered only after the manual process has been proven and a separately reviewed secret-handling design is approved.
 
-## Publication record
+## Previous publication record
 
 1. Gallery page: https://www.powershellgallery.com/packages/IdentityAtlas/0.15.1-preview1
 2. Published at: 4 August 2026 at 12:21:35 UTC.
