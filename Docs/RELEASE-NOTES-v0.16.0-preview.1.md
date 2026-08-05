@@ -69,7 +69,7 @@ Invoke-IdentityAtlas `
 2. JavaScript graph worker tests: 14 passed.
 3. PowerShell Script Analyzer: no findings.
 4. Tenant-data, credential and secret scans: no findings.
-5. Public release package checks: 11 passed.
+5. Public release security checks: 13 passed.
 6. PowerShell Gallery package checks: 16 passed, including isolated discovery, save and clean import.
 7. Browser interaction checks against existing live development tenant data: passed with no console errors.
-8. Fresh Core profile collection against Microsoft Graph: pending before publication.
+8. The JSON batch transport passed automated mocked Graph tests but did not receive a fresh live Core collection during this release cycle. It remains preview functionality requiring community field testing.

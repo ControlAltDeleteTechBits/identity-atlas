@@ -248,15 +248,15 @@ PowerShell tests: 64 passed, 0 failed
 JavaScript graph worker tests: 14 passed, 0 failed
 PSScriptAnalyzer findings: 0
 Source safety findings: 0
-Public release package checks: 11 passed, 0 failed
+Public release security checks: 13 passed, 0 failed
 PowerShell Gallery package checks: 16 passed, 0 failed
 Local PSResourceGet discovery, save and clean import: passed
 Browser console errors: 0
-Release archive SHA256: 937F8380318D716EBC16A451BB0929237FF65EEBC8B79893B0F0B3969C8CE4B9
-Gallery package SHA256: F6E049EC0528D97B12553972B8CB651C5D8C592AE5A177C6C3CDAFEDD0F54D3E
+Release archive SHA256: E1DEB2BE77923076C4AAA53FDA5BC55B3A90AD8D6CA0E525A0C94A0F4B14F132
+Gallery package SHA256: 3158CF992E0E5D3A3CC6E2655A35EC14DDF6B03F16750EA997F7E52526043812
 ```
 
-The browser checks used an existing live development tenant report repackaged with the v0.16.0 web assets. Settings, identity search, selection, relationship layout, authentication method drill-down, breadcrumb return, Applications, Roles and access explanation passed. The temporary repackaged report and server were removed. A fresh live Core collection remains required before publication to exercise the new Graph JSON batch transport against Microsoft Graph.
+The browser checks used an existing live development tenant report repackaged with the v0.16.0 web assets. Settings, identity search, selection, relationship layout, authentication method drill-down, breadcrumb return, Applications, Roles and access explanation passed. The temporary repackaged report and server were removed. The JSON batch transport has automated mocked Graph coverage but did not receive a fresh live Core collection during this release cycle, so it remains preview functionality requiring community field testing.
 
 The 0.15.1 PowerShell Gallery candidate passed:
 
