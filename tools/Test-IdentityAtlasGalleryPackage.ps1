@@ -69,6 +69,8 @@ if (-not [System.IO.File]::Exists($manifestPath)) {
 $manifest = Import-PowerShellDataFile -Path $manifestPath
 $manifestValidation = Test-ModuleManifest -Path $manifestPath
 $psData = $manifest.PrivateData.PSData
+$prerelease = if ($psData.ContainsKey('Prerelease')) { [string] $psData.Prerelease } else { '' }
+$galleryVersion = if ($prerelease) { "$($manifest.ModuleVersion)-$prerelease" } else { [string] $manifest.ModuleVersion }
 $graphDependency = @(
     $manifest.RequiredModules |
         Where-Object {
@@ -83,10 +85,10 @@ Add-AtlasGalleryCheck -Name 'Module identity' -Passed (
     $manifest.CompanyName -eq 'Control Alt Delete Tech Bits'
 ) -Evidence 'The package name, author and publisher match the approved Identity Atlas metadata.'
 
-Add-AtlasGalleryCheck -Name 'Preview version' -Passed (
-    $manifest.ModuleVersion -eq '0.16.0' -and
-    $psData.Prerelease -eq 'preview1'
-) -Evidence 'The manifest resolves to PowerShell Gallery version 0.16.0-preview1.'
+Add-AtlasGalleryCheck -Name 'Stable version' -Passed (
+    $manifest.ModuleVersion -eq '1.0.0' -and
+    [string]::IsNullOrWhiteSpace($prerelease)
+) -Evidence 'The manifest resolves to stable PowerShell Gallery version 1.0.0.'
 
 Add-AtlasGalleryCheck -Name 'PowerShell edition' -Passed (
     @($manifest.CompatiblePSEditions).Count -eq 1 -and
@@ -112,8 +114,8 @@ Add-AtlasGalleryCheck -Name 'Gallery icon' -Passed (
 
 Add-AtlasGalleryCheck -Name 'Release notes metadata' -Passed (
     -not [string]::IsNullOrWhiteSpace($psData.ReleaseNotes) -and
-    $psData.ReleaseNotes -match 'v0\.16\.0-preview\.1'
-) -Evidence 'The package metadata links to the matching GitHub preview release.'
+    $psData.ReleaseNotes -match 'v1\.0\.0'
+) -Evidence 'The package metadata links to the matching stable GitHub release.'
 
 if ($SkipPackage) {
     return [pscustomobject] @{
@@ -138,7 +140,7 @@ if (-not [System.IO.File]::Exists($resolvedPackagePath)) {
     throw "PowerShell Gallery package does not exist: $resolvedPackagePath"
 }
 
-$expectedPackageName = 'IdentityAtlas.0.16.0-preview1.nupkg'
+$expectedPackageName = "IdentityAtlas.$galleryVersion.nupkg"
 Add-AtlasGalleryCheck -Name 'Package filename' -Passed (
     [System.IO.Path]::GetFileName($resolvedPackagePath) -ceq $expectedPackageName
 ) -Evidence "The package filename is $expectedPackageName."
@@ -195,7 +197,7 @@ Add-AtlasGalleryCheck -Name 'Package content boundary' -Passed (
 
 Add-AtlasGalleryCheck -Name 'NuGet package identity' -Passed (
     (Get-AtlasNuspecValue -Nuspec $nuspec -Name 'id') -eq 'IdentityAtlas' -and
-    (Get-AtlasNuspecValue -Nuspec $nuspec -Name 'version') -eq '0.16.0-preview1' -and
+    (Get-AtlasNuspecValue -Nuspec $nuspec -Name 'version') -eq $galleryVersion -and
     (Get-AtlasNuspecValue -Nuspec $nuspec -Name 'authors') -eq 'Mark Oldham'
 ) -Evidence 'The generated NuGet metadata contains the approved package name, version and author.'
 
@@ -228,31 +230,39 @@ try {
         -Uri ([System.IO.Path]::GetDirectoryName($resolvedPackagePath)) `
         -Trusted
 
-    $foundPackage = Find-PSResource `
-        -Name IdentityAtlas `
-        -Version '0.16.0-preview1' `
-        -Prerelease `
-        -Repository $localRepositoryName `
-        -ErrorAction Stop
+    $findParameters = @{
+        Name = 'IdentityAtlas'
+        Version = $galleryVersion
+        Repository = $localRepositoryName
+        ErrorAction = 'Stop'
+    }
+    if ($prerelease) {
+        $findParameters.Prerelease = $true
+    }
+    $foundPackage = Find-PSResource @findParameters
 
     [System.IO.Directory]::CreateDirectory($localSaveRoot) | Out-Null
-    $savedPackage = Save-PSResource `
-        -Name IdentityAtlas `
-        -Version '0.16.0-preview1' `
-        -Prerelease `
-        -Repository $localRepositoryName `
-        -Path $localSaveRoot `
-        -SkipDependencyCheck `
-        -PassThru `
-        -ErrorAction Stop
+    $saveParameters = @{
+        Name = 'IdentityAtlas'
+        Version = $galleryVersion
+        Repository = $localRepositoryName
+        Path = $localSaveRoot
+        SkipDependencyCheck = $true
+        PassThru = $true
+        ErrorAction = 'Stop'
+    }
+    if ($prerelease) {
+        $saveParameters.Prerelease = $true
+    }
+    $savedPackage = Save-PSResource @saveParameters
 
     Add-AtlasGalleryCheck -Name 'Local repository discovery' -Passed (
         $foundPackage.Name -eq 'IdentityAtlas' -and
-        $foundPackage.Version.ToString() -eq '0.16.0' -and
-        $foundPackage.Prerelease -eq 'preview1' -and
+        $foundPackage.Version.ToString() -eq $manifest.ModuleVersion -and
+        ([string] $foundPackage.Prerelease) -eq $prerelease -and
         $savedPackage.Name -eq 'IdentityAtlas' -and
         @(Get-ChildItem -LiteralPath $localSaveRoot -Recurse -File).Count -gt 0
-    ) -Evidence 'PSResourceGet discovered and saved the preview package through an isolated local repository.'
+    ) -Evidence 'PSResourceGet discovered and saved the stable package through an isolated local repository.'
 }
 finally {
     Unregister-PSResourceRepository -Name $localRepositoryName -ErrorAction SilentlyContinue

@@ -63,7 +63,7 @@ Describe 'Identity Atlas isolated test fixture' {
 
     It 'records read-only security metadata without serialising tokens' {
         $script:report.manifest.schemaVersion | Should -Be '1.1.0'
-        $script:report.manifest.reportVersion | Should -Be '0.16.0'
+        $script:report.manifest.reportVersion | Should -Be '1.0.0'
         $script:report.manifest.security.readOnlyCollection | Should -Be $true
         $script:report.manifest.security.tokenDataSerialized | Should -Be $false
         $script:report.manifest.security.browserNetworkAccess | Should -Be 'disabled'
@@ -101,6 +101,8 @@ Describe 'Identity Atlas isolated test fixture' {
         $appText = Get-Content -LiteralPath (Join-Path $script:reportPath 'assets/app.js') -Raw
         $appText | Should -Match 'report\.manifest\.security'
         $appText | Should -Not -Match '(?<!report\.)\bmanifest\.security'
+        $appText | Should -Match 'Clear Identity Atlas browser data'
+        $appText | Should -Match 'localStorage\.removeItem'
     }
 
     It 'explains both requirements when Conditional Access policy data is unavailable' {
@@ -274,7 +276,7 @@ Describe 'Identity Atlas isolated test fixture' {
         Test-Path -LiteralPath (Join-Path $exportRoot 'Markdown/report-summary.md') | Should -Be $true
     }
 
-    It 'compares reports and writes JSON plus Markdown output' {
+    It 'compares reports and writes injection-safe JSON, Markdown and HTML output' {
         $referencePath = Join-Path $TestDrive 'ReferenceReport'
         $differencePath = Join-Path $TestDrive 'DifferenceReport'
         New-IdentityAtlasTestReport -OutputPath $referencePath | Out-Null
@@ -285,6 +287,8 @@ Describe 'Identity Atlas isolated test fixture' {
         $differenceReport.nodes = @($differenceReport.nodes | Where-Object DisplayName -ne 'Finance API client secret')
         $differenceReport.edges = @($differenceReport.edges | Where-Object Relationship -ne 'hasCredential')
         $policy = $differenceReport.nodes | Where-Object DisplayName -eq 'Require MFA for Finance API'
+        $hostileDisplayName = '</script><script>window.identityAtlasAuditMarker=true</script>'
+        $policy.DisplayName = $hostileDisplayName
         $policy.Properties.state = 'disabled'
         $differenceReport.manifest.counts.nodes = $differenceReport.nodes.Count
         $differenceReport.manifest.counts.edges = $differenceReport.edges.Count
@@ -303,6 +307,20 @@ Describe 'Identity Atlas isolated test fixture' {
         Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.json') | Should -Be $true
         Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.md') | Should -Be $true
         Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison.html') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison-data.js') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $comparisonPath 'comparison-app.js') | Should -Be $true
+
+        $comparisonHtml = Get-Content -LiteralPath (Join-Path $comparisonPath 'comparison.html') -Raw
+        $comparisonData = Get-Content -LiteralPath (Join-Path $comparisonPath 'comparison-data.js') -Raw
+        $comparisonApp = Get-Content -LiteralPath (Join-Path $comparisonPath 'comparison-app.js') -Raw
+        $comparisonHtml | Should -Not -Match ([regex]::Escape($hostileDisplayName))
+        $comparisonHtml | Should -Not -Match '<script>(?s:.*?)</script>'
+        $comparisonHtml | Should -Match "script-src 'self'"
+        $comparisonHtml | Should -Match "connect-src 'none'"
+        $comparisonHtml | Should -Match 'src="comparison-data\.js"'
+        $comparisonHtml | Should -Match 'src="comparison-app\.js"'
+        $comparisonData | Should -Match ([regex]::Escape($hostileDisplayName))
+        $comparisonApp | Should -Not -Match '(?i)innerHTML|document\.write|eval\(|new Function'
     }
 
     It 'refuses to write a report into a project source directory' {
@@ -347,6 +365,37 @@ Describe 'Identity Atlas isolated test fixture' {
             $writeScope | Should -Contain 'Mail.Send'
             $writeScope | Should -Not -Contain 'User.Read.All'
             $writeScope | Should -Not -Contain 'Application.Read.All'
+        }
+
+        It 'passes a dedicated application and tenant to Microsoft Graph authentication' {
+            $testClientId = [guid]::NewGuid().ToString()
+            $testTenantId = [guid]::NewGuid().ToString()
+            $recommendedScopes = @(Get-AtlasRecommendedScope)
+            Mock Connect-MgGraph { }
+            Mock Get-MgContext {
+                [pscustomobject] @{
+                    TenantId = $testTenantId
+                    ClientId = $testClientId
+                    Account = 'admin' + '@example.invalid'
+                    AuthType = 'Delegated'
+                    Scopes = $recommendedScopes
+                }
+            }
+
+            $connection = Connect-IdentityAtlas `
+                -UseDeviceCode `
+                -ClientId $testClientId `
+                -TenantId $testTenantId
+
+            Should -Invoke Connect-MgGraph -Times 1 -ParameterFilter {
+                $ClientId -eq $testClientId -and
+                $TenantId -eq $testTenantId -and
+                $UseDeviceCode -eq $true -and
+                $ContextScope -eq 'Process'
+            }
+            $connection.ClientId | Should -Be $testClientId
+            $connection.TenantId | Should -Be $testTenantId
+            $connection.PermissionStatus | Should -Be 'complete'
         }
 
         It 'summarises complete permission coverage without an empty-property error' {

@@ -4,7 +4,19 @@ Date: 5 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.16.0-preview.1 published to GitHub and PowerShell Gallery
+Implementation status: v1.0.0 stable release hardening and final validation in progress
+
+## v1.0.0 stable release progress
+
+1. Corrected the comparison HTML stored script-injection risk found during the 5 August 2026 security review.
+2. Moved comparison tenant data and fixed browser logic into separate local JavaScript resources.
+3. Added a restrictive comparison Content Security Policy and hostile-input regression tests.
+4. Added optional dedicated Microsoft Graph `ClientId` and `TenantId` parameters.
+5. Added a two-step Settings control for clearing Identity Atlas browser storage.
+6. Promoted module and report metadata to stable version 1.0.0.
+7. Pinned CI analysis dependencies and added GitHub Actions dependency monitoring.
+8. Updated stable installation, security, release and dedicated application guidance.
+9. Final build, public package gates and publication remain in progress.
 
 ## v0.16.0 implementation progress
 

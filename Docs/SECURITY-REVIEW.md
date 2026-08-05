@@ -1,10 +1,20 @@
 # Identity Atlas release security review
 
-Date: 4 August 2026
+Date: 5 August 2026
 
-Reviewed version: 0.16.0 PowerShell Gallery preview candidate
+Reviewed version: 1.0.0 stable release candidate
 
-Review status: local candidate passed; publication pending
+Review status: remediation implemented; final release validation pending
+
+## 1.0.0 remediation review
+
+The stable candidate corrects a stored script-injection risk in the standalone HTML created by `Compare-IdentityAtlas`. Version 0.16.0-preview.1 embedded comparison JSON inside an inline script, allowing a crafted Microsoft Entra string containing a closing script tag to alter the generated document.
+
+Version 1.0.0 writes tenant comparison data to `comparison-data.js`, writes fixed application logic to `comparison-app.js`, renders values with `textContent` and applies a Content Security Policy that blocks inline scripts and outbound connections. Automated tests use a hostile closing-script payload and confirm that it is absent from the HTML document.
+
+The main interactive report already used external data resources, DOM text rendering and a restrictive Content Security Policy. It was not affected by this comparison-only issue.
+
+Version 1.0.0 also supports a dedicated Microsoft Entra application through the optional `ClientId` and `TenantId` parameters, and adds a two-step browser control for clearing Identity Atlas local storage.
 
 ## 1. Security boundary
 
@@ -234,7 +244,7 @@ Review states, layout preferences and pinned object identifiers are stored in br
 
 1. A person who can read the report files can read the collected directory evidence. Identity Atlas does not encrypt reports.
 2. Browser local storage can retain tenant identifiers, review states and pins until site data is cleared.
-3. Delegated consent is currently granted to the Microsoft Graph Command Line Tools client used by Microsoft Graph PowerShell. That shared client can return write-capable scopes granted in an earlier session. Identity Atlas does not request or use them, and v0.16.0 warns when they are present. A dedicated Identity Atlas application registration remains a decision for a later release.
+3. The default delegated consent uses the Microsoft Graph Command Line Tools client. That shared client can return write-capable scopes granted in an earlier session. Identity Atlas does not request or use them and warns when they are present. Version 1.0.0 supports a dedicated application registration through `ClientId` and `TenantId` for organisations requiring an isolated consent boundary.
 4. The local server does not attempt to resolve or reject every possible filesystem reparse point. The report root must remain administrator controlled.
 5. Report exports can be shared outside Identity Atlas controls.
 6. One live authentication method request previously returned HTTP 403 because delegated scope and administrator role requirements are both enforced by Microsoft Graph.

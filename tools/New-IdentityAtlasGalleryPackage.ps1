@@ -4,8 +4,9 @@ param(
 
     [string] $ReleasePath,
 
-    [ValidatePattern('^[0-9A-Za-z.-]+$')]
-    [string] $GitHubPrereleaseLabel = 'preview.1',
+    [ValidatePattern('^$|^[0-9A-Za-z.-]+$')]
+    [AllowEmptyString()]
+    [string] $GitHubPrereleaseLabel = '',
 
     [switch] $Force
 )
@@ -31,9 +32,14 @@ $manifestPath = Join-Path $resolvedProjectRoot 'IdentityAtlas.psd1'
 $manifest = Import-PowerShellDataFile -Path $manifestPath
 $moduleManifest = Test-ModuleManifest -Path $manifestPath
 $moduleVersion = $moduleManifest.Version.ToString()
-$prerelease = $manifest.PrivateData.PSData.Prerelease
-$galleryVersion = "$moduleVersion-$prerelease"
-$githubVersion = "$moduleVersion-$GitHubPrereleaseLabel"
+$prerelease = if ($manifest.PrivateData.PSData.ContainsKey('Prerelease')) {
+    [string] $manifest.PrivateData.PSData.Prerelease
+}
+else {
+    ''
+}
+$galleryVersion = if ($prerelease) { "$moduleVersion-$prerelease" } else { $moduleVersion }
+$githubVersion = if ($GitHubPrereleaseLabel) { "$moduleVersion-$GitHubPrereleaseLabel" } else { $moduleVersion }
 
 if (-not $ReleasePath) {
     $ReleasePath = Join-Path $resolvedProjectRoot "Release/IdentityAtlas-v$githubVersion.zip"
@@ -112,10 +118,16 @@ try {
     $stagedManifestPath = Join-Path $packageRoot 'IdentityAtlas.psd1'
     $stagedManifest = Import-PowerShellDataFile -Path $stagedManifestPath
     $stagedModule = Test-ModuleManifest -Path $stagedManifestPath
+    $stagedPrerelease = if ($stagedManifest.PrivateData.PSData.ContainsKey('Prerelease')) {
+        [string] $stagedManifest.PrivateData.PSData.Prerelease
+    }
+    else {
+        ''
+    }
 
     if (
         $stagedModule.Version.ToString() -ne $moduleVersion -or
-        $stagedManifest.PrivateData.PSData.Prerelease -ne $prerelease
+        $stagedPrerelease -ne $prerelease
     ) {
         throw 'The GitHub release archive version does not match the Gallery source manifest.'
     }

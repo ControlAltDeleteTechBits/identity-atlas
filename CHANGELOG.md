@@ -2,6 +2,29 @@
 
 This file records user-facing changes. Identity Atlas uses semantic versioning for stable releases and an additional preview label before version 1.0.
 
+## 1.0.0
+
+Released as the first stable Identity Atlas version.
+
+### Security
+
+1. Removed raw tenant JSON from the inline script in `Compare-IdentityAtlas` HTML output.
+2. Comparison data now loads from a separate local JavaScript resource under a restrictive Content Security Policy.
+3. Added hostile tenant-string regression coverage for closing script tags and prohibited browser execution primitives.
+4. Added optional dedicated Microsoft Entra application and tenant identifiers to `Connect-IdentityAtlas`.
+5. Added an in-report control that clears Identity Atlas pins, review states and layout settings from browser storage.
+
+### Release controls
+
+1. Promoted the module and report format to stable version 1.0.0.
+2. Pinned development analysis dependencies and enabled automated GitHub Actions dependency updates.
+3. Updated security, installation and dedicated application guidance for the stable release.
+4. Retained immutable GitHub assets, SHA256 checksums, tenant-data scanning and isolated Gallery package validation.
+
+### Compatibility
+
+Existing 0.16.0 reports remain readable. The four public commands retain their existing names and default behaviour. `ClientId` and `TenantId` are optional additions to `Connect-IdentityAtlas`.
+
 ## 0.16.0-preview.1
 
 Release date: 5 August 2026

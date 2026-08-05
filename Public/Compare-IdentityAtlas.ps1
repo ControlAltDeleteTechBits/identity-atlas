@@ -206,12 +206,87 @@ function Compare-IdentityAtlas {
         Write-AtlasTextFile -Path $markdownPath -Content ($lines -join "`n")
 
         $comparisonJson = ($comparison | ConvertTo-Json -Depth 30 -Compress)
+        $comparisonDataPath = Join-Path $resolvedOutputPath 'comparison-data.js'
+        $comparisonAppPath = Join-Path $resolvedOutputPath 'comparison-app.js'
+        Write-AtlasTextFile `
+            -Path $comparisonDataPath `
+            -Content "window.IdentityAtlasComparisonData = $comparisonJson;"
+
+        $comparisonApplication = @'
+(function initialiseIdentityAtlasComparison() {
+  'use strict';
+
+  const comparison = window.IdentityAtlasComparisonData;
+  if (!comparison) {
+    throw new Error('Identity Atlas comparison data is unavailable.');
+  }
+
+  const make = (tag, className, text) => {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+  };
+  document.getElementById('comparison-range').textContent =
+    comparison.reference.tenant + ' compared with ' + comparison.difference.tenant;
+  const cards = document.getElementById('summary-cards');
+  for (const [label, value, className] of [
+    ['Added objects', comparison.summary.addedNodes, 'added'],
+    ['Removed objects', comparison.summary.removedNodes, 'removed'],
+    ['Changed objects', comparison.summary.changedNodes, 'changed'],
+    ['Added relationships', comparison.summary.addedEdges, 'added'],
+    ['Removed relationships', comparison.summary.removedEdges, 'removed'],
+    ['Changed relationships', comparison.summary.changedEdges, 'changed']
+  ]) {
+    const card = make('div', 'card');
+    card.append(make('span', 'label', label), make('span', 'value ' + className, String(value)));
+    cards.append(card);
+  }
+  const renderEmpty = (container) => container.append(make('div', 'item meta', 'None.'));
+  const renderNodes = (id, items, mode) => {
+    const container = document.getElementById(id);
+    if (!items.length) { renderEmpty(container); return; }
+    for (const item of items.slice(0, 100)) {
+      const node = item.displayName ? item : item.after;
+      const row = make('div', 'item');
+      row.append(make('span', mode, node.displayName), make('span', 'meta', node.kind + ' | ' + node.id));
+      if (item.beforeProperties || item.afterProperties) {
+        row.append(make('pre', null, JSON.stringify({ before: item.beforeProperties, after: item.afterProperties }, null, 2)));
+      }
+      container.append(row);
+    }
+  };
+  const renderEdges = (id, items, mode) => {
+    const container = document.getElementById(id);
+    if (!items.length) { renderEmpty(container); return; }
+    for (const item of items.slice(0, 100)) {
+      const edge = item.relationship ? item : item.after;
+      const row = make('div', 'item');
+      row.append(make('span', mode, edge.from + ' ' + edge.relationship + ' ' + edge.to), make('span', 'meta', edge.fromKind + ' to ' + edge.toKind));
+      if (item.before || item.after) {
+        row.append(make('pre', null, JSON.stringify({ before: item.before.state, after: item.after.state }, null, 2)));
+      }
+      container.append(row);
+    }
+  };
+  renderNodes('added-nodes', comparison.addedNodes, 'added');
+  renderNodes('removed-nodes', comparison.removedNodes, 'removed');
+  renderNodes('changed-nodes', comparison.changedNodes, 'changed');
+  renderEdges('added-edges', comparison.addedEdges, 'added');
+  renderEdges('removed-edges', comparison.removedEdges, 'removed');
+  renderEdges('changed-edges', comparison.changedEdges, 'changed');
+}());
+'@
+        Write-AtlasTextFile -Path $comparisonAppPath -Content $comparisonApplication
+
         $html = @"
 <!doctype html>
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+  <meta name="referrer" content="no-referrer">
   <title>Identity Atlas comparison</title>
   <style>
     :root { color-scheme: light; --ink: #102033; --muted: #5d6c7d; --line: #dde5ee; --panel: #ffffff; --canvas: #f5f7fa; --brand: #102033; --accent: #49a4ad; --added: #0f7b48; --removed: #a23d3d; --changed: #8a6517; }
@@ -252,63 +327,8 @@ function Compare-IdentityAtlas {
     <section><h2 class="removed">Removed relationships</h2><div id="removed-edges"></div></section>
     <section><h2 class="changed">Changed relationships</h2><div id="changed-edges"></div></section>
   </main>
-  <script>
-    const comparison = $comparisonJson;
-    const make = (tag, className, text) => {
-      const element = document.createElement(tag);
-      if (className) element.className = className;
-      if (text !== undefined) element.textContent = text;
-      return element;
-    };
-    document.getElementById('comparison-range').textContent =
-      comparison.reference.tenant + ' compared with ' + comparison.difference.tenant;
-    const cards = document.getElementById('summary-cards');
-    for (const [label, value, className] of [
-      ['Added objects', comparison.summary.addedNodes, 'added'],
-      ['Removed objects', comparison.summary.removedNodes, 'removed'],
-      ['Changed objects', comparison.summary.changedNodes, 'changed'],
-      ['Added relationships', comparison.summary.addedEdges, 'added'],
-      ['Removed relationships', comparison.summary.removedEdges, 'removed'],
-      ['Changed relationships', comparison.summary.changedEdges, 'changed']
-    ]) {
-      const card = make('div', 'card');
-      card.append(make('span', 'label', label), make('span', 'value ' + className, String(value)));
-      cards.append(card);
-    }
-    const renderEmpty = (container) => container.append(make('div', 'item meta', 'None.'));
-    const renderNodes = (id, items, mode) => {
-      const container = document.getElementById(id);
-      if (!items.length) { renderEmpty(container); return; }
-      for (const item of items.slice(0, 100)) {
-        const node = item.displayName ? item : item.after;
-        const row = make('div', 'item');
-        row.append(make('span', mode, node.displayName), make('span', 'meta', node.kind + ' | ' + node.id));
-        if (item.beforeProperties || item.afterProperties) {
-          row.append(make('pre', null, JSON.stringify({ before: item.beforeProperties, after: item.afterProperties }, null, 2)));
-        }
-        container.append(row);
-      }
-    };
-    const renderEdges = (id, items, mode) => {
-      const container = document.getElementById(id);
-      if (!items.length) { renderEmpty(container); return; }
-      for (const item of items.slice(0, 100)) {
-        const edge = item.relationship ? item : item.after;
-        const row = make('div', 'item');
-        row.append(make('span', mode, edge.from + ' ' + edge.relationship + ' ' + edge.to), make('span', 'meta', edge.fromKind + ' to ' + edge.toKind));
-        if (item.before || item.after) {
-          row.append(make('pre', null, JSON.stringify({ before: item.before.state, after: item.after.state }, null, 2)));
-        }
-        container.append(row);
-      }
-    };
-    renderNodes('added-nodes', comparison.addedNodes, 'added');
-    renderNodes('removed-nodes', comparison.removedNodes, 'removed');
-    renderNodes('changed-nodes', comparison.changedNodes, 'changed');
-    renderEdges('added-edges', comparison.addedEdges, 'added');
-    renderEdges('removed-edges', comparison.removedEdges, 'removed');
-    renderEdges('changed-edges', comparison.changedEdges, 'changed');
-  </script>
+  <script defer src="comparison-data.js"></script>
+  <script defer src="comparison-app.js"></script>
 </body>
 </html>
 "@
