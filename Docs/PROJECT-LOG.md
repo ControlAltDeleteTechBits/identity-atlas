@@ -4,7 +4,7 @@ Date: 5 August 2026
 
 Owner: Mark Oldham
 
-Implementation status: v0.15.1-preview.1 published; v0.16.0-preview.1 release candidate prepared
+Implementation status: v0.16.0-preview.1 published to GitHub and PowerShell Gallery
 
 ## v0.16.0 implementation progress
 
@@ -36,9 +36,20 @@ Implementation status: v0.15.1-preview.1 published; v0.16.0-preview.1 release ca
 
 ## v0.16.0 remaining roadmap
 
-1. Complete protected-branch review and GitHub Actions validation.
-2. Publish the GitHub pre-release and matching PowerShell Gallery package.
-3. Perform a clean public installation test from both distribution channels.
+1. Collect community feedback on progress reporting, batching and local report startup.
+2. Exercise the JSON batch transport across a wider range of authorised Microsoft Entra tenants.
+3. Review preview feedback before selecting the next stable-release milestone.
+
+## v0.16.0 community publication
+
+1. Published the immutable GitHub prerelease `v0.16.0-preview.1` on 5 August 2026.
+2. Published `IdentityAtlas` version `0.16.0-preview1` through the `ControlAltDeleteTechBits` PowerShell Gallery publisher account.
+3. GitHub release: `https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v0.16.0-preview.1`.
+4. Gallery page: `https://www.powershellgallery.com/packages/IdentityAtlas/0.16.0-preview1`.
+5. The public GitHub ZIP matched SHA256 `E1DEB2BE77923076C4AAA53FDA5BC55B3A90AD8D6CA0E525A0C94A0F4B14F132`.
+6. The public Gallery NuGet package matched SHA256 `3158CF992E0E5D3A3CC6E2655A35EC14DDF6B03F16750EA997F7E52526043812`.
+7. Public Gallery discovery, isolated save, dependency acquisition and clean import passed.
+8. The isolated import exported `Compare-IdentityAtlas`, `Connect-IdentityAtlas`, `Export-IdentityAtlas` and `Invoke-IdentityAtlas`.
 
 ## Current goal
 
