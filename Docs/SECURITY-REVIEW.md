@@ -4,7 +4,7 @@ Date: 5 August 2026
 
 Reviewed version: 1.0.0 stable release candidate
 
-Review status: remediation implemented; final release validation pending
+Review status: remediation implemented and release validation passed
 
 ## 1.0.0 remediation review
 
@@ -251,10 +251,10 @@ Review states, layout preferences and pinned object identifiers are stored in br
 
 ## 13. Validation evidence
 
-The 0.16.0 local release candidate passed:
+The 1.0.0 stable release candidate passed:
 
 ```text
-PowerShell tests: 64 passed, 0 failed
+PowerShell tests: 65 passed, 0 failed
 JavaScript graph worker tests: 14 passed, 0 failed
 PSScriptAnalyzer findings: 0
 Source safety findings: 0
@@ -262,11 +262,13 @@ Public release security checks: 13 passed, 0 failed
 PowerShell Gallery package checks: 16 passed, 0 failed
 Local PSResourceGet discovery, save and clean import: passed
 Browser console errors: 0
-Release archive SHA256: E1DEB2BE77923076C4AAA53FDA5BC55B3A90AD8D6CA0E525A0C94A0F4B14F132
-Gallery package SHA256: 3158CF992E0E5D3A3CC6E2655A35EC14DDF6B03F16750EA997F7E52526043812
+Comparison script-injection regression test: passed
+Browser data-clearing control: passed
+Release archive SHA256: 37FFE8D2CC7B5F110F797189DF8D9EA49A52C1F09B8E14EBD02BF4DC4D9219E4
+Gallery package SHA256: 4855C3E75A48ABAFB7771B564045F502D222C792F0A5D3EFBB0CE129FB75B04B
 ```
 
-The browser checks used an existing live development tenant report repackaged with the v0.16.0 web assets. Settings, identity search, selection, relationship layout, authentication method drill-down, breadcrumb return, Applications, Roles and access explanation passed. The temporary repackaged report and server were removed. The JSON batch transport has automated mocked Graph coverage but did not receive a fresh live Core collection during this release cycle, so it remains preview functionality requiring community field testing.
+The browser checks used an isolated copy of an existing live development tenant report repackaged with the 1.0.0 web assets. Settings, browser-data clearing, identity search, selection, relationship layout, authentication method drill-down, breadcrumb return, Applications, Roles and access explanation passed with no console errors. The JSON batch transport has automated mocked Graph coverage but did not receive a fresh live Core collection during this release cycle.
 
 The 0.15.1 PowerShell Gallery candidate passed:
 
