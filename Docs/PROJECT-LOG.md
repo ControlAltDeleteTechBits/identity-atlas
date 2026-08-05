@@ -26,7 +26,7 @@ Implementation status: v0.15.1-preview.1 published; v0.16.0-preview.1 release ca
 2. JavaScript graph worker tests: 14 passed, 0 failed.
 3. PowerShell Script Analyzer findings: 0.
 4. Source tenant-data and credential findings: 0.
-5. Public release package checks: 11 passed, 0 failed.
+5. Public release security checks: 13 passed, 0 failed.
 6. PowerShell Gallery package checks: 16 passed, 0 failed.
 7. Local package discovery, save and clean import: passed.
 8. Browser checks against existing live development tenant data: passed.
