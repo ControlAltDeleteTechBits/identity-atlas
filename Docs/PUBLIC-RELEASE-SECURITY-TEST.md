@@ -4,18 +4,18 @@ Date: 5 August 2026
 
 Current release candidate: `v1.0.0`
 
-Current release result: final validation pending
+Current release result: passed
 
 Candidate GitHub release SHA256:
 
 ```text
-Pending final build
+37FFE8D2CC7B5F110F797189DF8D9EA49A52C1F09B8E14EBD02BF4DC4D9219E4
 ```
 
 Candidate PowerShell Gallery package SHA256:
 
 ```text
-Pending final build
+4855C3E75A48ABAFB7771B564045F502D222C792F0A5D3EFBB0CE129FB75B04B
 ```
 
 ## Purpose

@@ -1,6 +1,6 @@
 # Identity Atlas v1.0.0
 
-Release date: pending final publication
+Release date: 5 August 2026
 
 Publisher: Control Alt Delete Tech Bits
 
