@@ -18,6 +18,8 @@ Please allow time to confirm the issue before publishing details.
 
 Identity Atlas is read only. It requests delegated Microsoft Graph read permissions and creates a local static report.
 
+Microsoft Graph Command Line Tools can return scopes granted during earlier sessions. `Connect-IdentityAtlas` warns when the resulting context contains additional write-capable scopes. Identity Atlas does not request or use those scopes. Administrators who require a strict least-privilege token should review the shared Graph Command Line Tools grant or use a dedicated application registration.
+
 Generated reports contain administrative evidence and are not encrypted. Anyone who can read the files can read the collected tenant information.
 
 The local report server binds to the loopback interface and is intended only for review on the administrator's device. Do not expose it through a reverse proxy, port forwarding rule, shared web server or public hosting service.

@@ -44,6 +44,14 @@ function Connect-IdentityAtlas {
     if ($permissionAssessment.status -eq 'partial') {
         Write-Warning "The authenticated context is missing recommended delegated read scopes: $($missingScope -join ', '). Identity Atlas will mark affected collection as partial."
     }
+    $additionalWriteScope = Get-AtlasAdditionalWriteScope -ContextScope @($context.Scopes)
+    if ($additionalWriteScope.Count -gt 0) {
+        Write-Warning (
+            'The Microsoft Graph PowerShell context also contains delegated write permissions from an earlier consent: ' +
+            "$($additionalWriteScope -join ', '). Identity Atlas does not request or use these scopes. " +
+            'Review the Microsoft Graph Command Line Tools grant or use a dedicated application registration for a strict least-privilege context.'
+        )
+    }
 
     $script:IdentityAtlasCollectionProfile = $CollectionProfile
 
@@ -55,5 +63,6 @@ function Connect-IdentityAtlas {
         CollectionProfile = $CollectionProfile
         PermissionStatus = $permissionAssessment.status
         MissingScopes = $missingScope
+        AdditionalWriteScopes = $additionalWriteScope
     }
 }

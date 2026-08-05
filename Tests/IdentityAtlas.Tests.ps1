@@ -63,7 +63,7 @@ Describe 'Identity Atlas isolated test fixture' {
 
     It 'records read-only security metadata without serialising tokens' {
         $script:report.manifest.schemaVersion | Should -Be '1.1.0'
-        $script:report.manifest.reportVersion | Should -Be '0.15.1'
+        $script:report.manifest.reportVersion | Should -Be '0.16.0'
         $script:report.manifest.security.readOnlyCollection | Should -Be $true
         $script:report.manifest.security.tokenDataSerialized | Should -Be $false
         $script:report.manifest.security.browserNetworkAccess | Should -Be 'disabled'
@@ -335,6 +335,20 @@ Describe 'Identity Atlas isolated test fixture' {
             $assessment.missingRequirements.Count | Should -Be 0
         }
 
+        It 'identifies additional write scopes inherited by a Graph PowerShell context' {
+            $writeScope = Get-AtlasAdditionalWriteScope -ContextScope @(
+                'User.Read.All'
+                'Application.Read.All'
+                'CloudPC.ReadWrite.All'
+                'Mail.Send'
+            )
+
+            $writeScope | Should -Contain 'CloudPC.ReadWrite.All'
+            $writeScope | Should -Contain 'Mail.Send'
+            $writeScope | Should -Not -Contain 'User.Read.All'
+            $writeScope | Should -Not -Contain 'Application.Read.All'
+        }
+
         It 'summarises complete permission coverage without an empty-property error' {
             $recommendedScopes = @(
                 'User.Read.All'
@@ -410,7 +424,9 @@ Describe 'Identity Atlas isolated test fixture' {
         }
 
         It 'rejects an unrecognised Graph request URI before making a request' {
+            $script:graphRequestCalled = $false
             Mock Invoke-MgGraphRequest {
+                $script:graphRequestCalled = $true
                 throw 'Invoke-MgGraphRequest should not be called.'
             }
 
@@ -422,7 +438,7 @@ Describe 'Identity Atlas isolated test fixture' {
                 $threw = $true
             }
             $threw | Should -Be $true
-            Assert-MockCalled Invoke-MgGraphRequest -Times 0
+            $script:graphRequestCalled | Should -Be $false
         }
 
         It 'keeps an empty Graph value collection empty' {
@@ -437,6 +453,161 @@ Describe 'Identity Atlas isolated test fixture' {
 
             $response.Items.Count | Should -Be 0
             $response.Metrics.itemCount | Should -Be 0
+        }
+
+        It 'reports Graph throttling and retries a permitted read request' {
+            $script:throttleRequestCount = 0
+            Mock Start-Sleep {}
+            Mock Invoke-MgGraphRequest {
+                $script:throttleRequestCount++
+                if ($script:throttleRequestCount -eq 1) {
+                    $exception = [System.Exception]::new('Too many requests')
+                    $exception | Add-Member -MemberType NoteProperty -Name ResponseStatusCode -Value 429
+                    throw $exception
+                }
+                [pscustomobject] @{ value = @([pscustomobject] @{ id = 'user-1' }) }
+            }
+
+            $warningRecord = @()
+            $response = Invoke-AtlasGraphRequest `
+                -Uri '/v1.0/users' `
+                -MaximumRetryCount 2 `
+                -WarningVariable warningRecord
+
+            $script:throttleRequestCount | Should -Be 2
+            $response.Metrics.requestCount | Should -Be 2
+            $response.Metrics.retryCount | Should -Be 1
+            ($warningRecord -join ' ') | Should -Match 'Microsoft Graph throttled the request'
+            ($warningRecord -join ' ') | Should -Match 'Retrying in 2 seconds'
+        }
+
+        It 'uses bounded read-only Graph batches and preserves request order' {
+            $script:observedBatchPayload = @()
+            Mock Invoke-MgGraphRequest {
+                param($Body)
+                $payload = $Body | ConvertFrom-Json
+                $script:observedBatchPayload += $payload
+                [pscustomobject] @{
+                    responses = @(
+                        foreach ($request in $payload.requests) {
+                            [pscustomobject] @{
+                                id = $request.id
+                                status = 200
+                                body = [pscustomobject] @{
+                                    value = @([pscustomobject] @{ id = "result-$($request.id)" })
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+
+            $response = Invoke-AtlasGraphBatchGet -Request @(
+                [pscustomobject] @{ Id = 'one'; Uri = '/v1.0/users/user-one/authentication/methods' }
+                [pscustomobject] @{ Id = 'two'; Uri = '/v1.0/users/user-two/authentication/methods' }
+                [pscustomobject] @{ Id = 'three'; Uri = '/v1.0/users/user-three/authentication/methods' }
+            ) -BatchSize 2
+
+            $script:observedBatchPayload.Count | Should -Be 2
+            @($script:observedBatchPayload[0].requests).Count | Should -Be 2
+            @($script:observedBatchPayload[1].requests).Count | Should -Be 1
+            @($script:observedBatchPayload.requests.method | Sort-Object -Unique) | Should -Be @('GET')
+            @($response.Responses.Id) | Should -Be @('one', 'two', 'three')
+            @($response.Responses.Items.id) | Should -Be @('result-one', 'result-two', 'result-three')
+            $response.Metrics.requestCount | Should -Be 2
+            $response.Metrics.logicalRequestCount | Should -Be 3
+        }
+
+        It 'rejects beta endpoints from a Graph batch' {
+            { Invoke-AtlasGraphBatchGet -Request @([pscustomobject] @{ Id = 'one'; Uri = '/beta/users' }) } |
+                Should -Throw '*v1.0*'
+        }
+
+        It 'summarises progress when collection is cancelled' {
+            Initialize-AtlasProgress -StepCount 2 -CollectionProfile Core -SkippedCollector @('AuthenticationMethods') | Out-Null
+            Start-AtlasProgressStep -Name users -DisplayName Users -Step 1
+            Update-AtlasProgressRequest -RequestIncrement 2 -RetryIncrement 1 -Status 'Collecting users'
+            Update-AtlasProgressItem -CurrentItem 1 -TotalItems 2 -Status 'Users'
+            $result = [AtlasCollectionResult]::new()
+            $result.Nodes.Add((New-AtlasNode -TenantId 'tenant-1' -Id 'user-1' -Kind 'user' -DisplayName 'Test user'))
+            $result.Metrics = @{ requestCount = 2; retryCount = 1 }
+            Complete-AtlasProgressStep -Result $result
+
+            $summary = Complete-AtlasProgress -Status Cancelled
+
+            $summary.Status | Should -Be 'Cancelled'
+            $summary.CompletedStepCount | Should -Be 1
+            $summary.StepCount | Should -Be 2
+            $summary.RequestCount | Should -Be 2
+            $summary.RetryCount | Should -Be 1
+            $summary.NodeCount | Should -Be 1
+            $summary.SkippedCollectors | Should -Contain 'AuthenticationMethods'
+        }
+
+        It 'records deliberately skipped slower collectors as partial coverage' {
+            Mock Invoke-AtlasGraphBatchGet { throw 'Batching should not run for skipped collectors.' }
+            Mock Invoke-AtlasGraphRequest {
+                [pscustomobject] @{
+                    Items = @()
+                    Metrics = @{ requestCount = 1; retryCount = 0 }
+                }
+            }
+
+            $knownNode = New-AtlasNode -TenantId 'tenant-1' -Id 'user-1' -Kind 'user' -DisplayName 'Test user'
+            $groupResult = Get-AtlasGroup -TenantId 'tenant-1' -SkipMembersAndOwners
+            $deviceResult = Get-AtlasDeviceAndAuthentication `
+                -TenantId 'tenant-1' `
+                -KnownNode @($knownNode) `
+                -SkipDeviceOwners `
+                -SkipAuthenticationMethods
+            $applicationResult = Get-AtlasApplication `
+                -TenantId 'tenant-1' `
+                -KnownNode @($knownNode) `
+                -SkipAppRoleAssignments `
+                -SkipOwners
+
+            $groupResult.Status | Should -Be 'partial'
+            $groupResult.Metrics.membersAndOwnersSkipped | Should -Be $true
+            $deviceResult.Status | Should -Be 'partial'
+            $deviceResult.Metrics.deviceOwnersSkipped | Should -Be $true
+            $deviceResult.Metrics.authenticationMethodsSkipped | Should -Be $true
+            $applicationResult.Status | Should -Be 'partial'
+            $applicationResult.Metrics.appRoleAssignmentsSkipped | Should -Be $true
+            $applicationResult.Metrics.ownersSkipped | Should -Be $true
+        }
+
+        It 'serves a generated live report on an available loopback port' {
+            $reportPath = Join-Path $TestDrive 'LiveServerReport'
+            $collection = [AtlasCollectionResult]::new()
+            $collection.Nodes.Add(
+                (New-AtlasNode -TenantId 'tenant-1' -Id 'user-1' -Kind 'user' -DisplayName 'Test user')
+            )
+            $report = New-AtlasReport `
+                -TenantId 'tenant-1' `
+                -TenantDisplayName 'Test tenant' `
+                -Collection $collection `
+                -Collectors @() `
+                -DataOrigin LiveTenant
+            [void] (Write-AtlasReport -Report $report -OutputPath $reportPath)
+            $startingPort = Get-Random -Minimum 18000 -Maximum 24000
+            $server = $null
+            try {
+                $server = Start-AtlasReportServer `
+                    -ReportRoot $reportPath `
+                    -Port $startingPort `
+                    -PortSearchLimit 10
+                $response = Invoke-WebRequest -Uri $server.Url -UseBasicParsing -TimeoutSec 5
+
+                $response.StatusCode | Should -Be 200
+                $response.Content | Should -Match '<title>Identity Atlas</title>'
+                $server.Url | Should -Match '^http://127\.0\.0\.1:\d+/$'
+                $server.ProcessId | Should -BeGreaterThan 0
+            }
+            finally {
+                if ($server -and (Get-Process -Id $server.ProcessId -ErrorAction SilentlyContinue)) {
+                    Stop-Process -Id $server.ProcessId -Force
+                }
+            }
         }
 
         It 'collects a directory role assignment without appScopeId' {
@@ -487,6 +658,23 @@ Describe 'Identity Atlas isolated test fixture' {
         }
 
         It 'collects application app role assignments' {
+            Mock Invoke-AtlasGraphBatchGet {
+                param($Request)
+                $responses = foreach ($entry in $Request) {
+                    $response = Invoke-AtlasGraphRequest -Uri $entry.Uri
+                    [pscustomobject] @{
+                        Id = $entry.Id
+                        Uri = $entry.Uri
+                        StatusCode = 200
+                        Items = @($response.Items)
+                        ErrorMessage = $null
+                    }
+                }
+                [pscustomobject] @{
+                    Responses = @($responses)
+                    Metrics = @{ logicalRequestCount = $Request.Count; requestCount = 1; retryCount = 0; batchSize = 10 }
+                }
+            }
             Mock Invoke-AtlasGraphRequest {
                 param($Uri)
 
@@ -547,6 +735,23 @@ Describe 'Identity Atlas isolated test fixture' {
         }
 
         It 'collects a single application credential and API permission without scalar count errors' {
+            Mock Invoke-AtlasGraphBatchGet {
+                param($Request)
+                $responses = foreach ($entry in $Request) {
+                    $response = Invoke-AtlasGraphRequest -Uri $entry.Uri
+                    [pscustomobject] @{
+                        Id = $entry.Id
+                        Uri = $entry.Uri
+                        StatusCode = 200
+                        Items = @($response.Items)
+                        ErrorMessage = $null
+                    }
+                }
+                [pscustomobject] @{
+                    Responses = @($responses)
+                    Metrics = @{ logicalRequestCount = $Request.Count; requestCount = 1; retryCount = 0; batchSize = 10 }
+                }
+            }
             Mock Invoke-AtlasGraphRequest {
                 param($Uri)
 
@@ -655,6 +860,23 @@ Describe 'Identity Atlas isolated test fixture' {
         }
 
         It 'collects devices and user authentication methods' {
+            Mock Invoke-AtlasGraphBatchGet {
+                param($Request)
+                $responses = foreach ($entry in $Request) {
+                    $response = Invoke-AtlasGraphRequest -Uri $entry.Uri
+                    [pscustomobject] @{
+                        Id = $entry.Id
+                        Uri = $entry.Uri
+                        StatusCode = 200
+                        Items = @($response.Items)
+                        ErrorMessage = $null
+                    }
+                }
+                [pscustomobject] @{
+                    Responses = @($responses)
+                    Metrics = @{ logicalRequestCount = $Request.Count; requestCount = 1; retryCount = 0; batchSize = 10 }
+                }
+            }
             Mock Invoke-AtlasGraphRequest {
                 param($Uri)
 

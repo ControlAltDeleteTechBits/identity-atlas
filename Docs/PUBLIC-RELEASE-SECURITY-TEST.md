@@ -68,7 +68,7 @@ RoleEligibilitySchedule.Read.Directory
 RoleManagement.Read.Directory
 ```
 
-The collector’s Microsoft Graph wrapper only issues GET requests. The browser report does not call Microsoft Graph or another network service.
+The collector uses GET for Microsoft Graph resources. Its only POST is to the Microsoft Graph `/v1.0/$batch` transport, and every contained subrequest is GET. The browser report does not call Microsoft Graph or another network service.
 
 Microsoft documents `RoleEligibilitySchedule.Read.Directory` as the least-privileged delegated permission for listing role eligibility schedule instances. Microsoft documents `Policy.Read.All` for listing Conditional Access policies and also requires the signed-in user to hold a supported Microsoft Entra role.
 

@@ -31,6 +31,7 @@ Describe 'Identity Atlas relationship and governance collectors' {
         }
 
         It 'wires every extended and Governance collector into the public invocation command' {
+            $script:extendedCollectorCalls = @{}
             Mock Get-MgContext {
                 [pscustomobject] @{
                     TenantId = 'tenant-one'
@@ -42,25 +43,30 @@ Describe 'Identity Atlas relationship and governance collectors' {
             Mock Get-AtlasDeviceAndAuthentication { [AtlasCollectionResult]::new() }
             Mock Get-AtlasDirectoryRole { [AtlasCollectionResult]::new() }
             Mock Get-AtlasApplication { [AtlasCollectionResult]::new() }
-            Mock Get-AtlasApplicationManagementPolicy { [AtlasCollectionResult]::new() }
-            Mock Get-AtlasCrossTenantAccess { [AtlasCollectionResult]::new() }
+            Mock Get-AtlasApplicationManagementPolicy { $script:extendedCollectorCalls.applicationManagementPolicies = 1; [AtlasCollectionResult]::new() }
+            Mock Get-AtlasCrossTenantAccess { $script:extendedCollectorCalls.crossTenantAccess = 1; [AtlasCollectionResult]::new() }
             Mock Get-AtlasConditionalAccessPolicy { [AtlasCollectionResult]::new() }
             Mock Get-AtlasConditionalAccessReference { [AtlasCollectionResult]::new() }
-            Mock Get-AtlasAdministrativeUnit { [AtlasCollectionResult]::new() }
-            Mock Get-AtlasPrivilegedGroupAssignment { [AtlasCollectionResult]::new() }
-            Mock Get-AtlasEntitlementManagement { [AtlasCollectionResult]::new() }
-            Mock Get-AtlasAccessReview { [AtlasCollectionResult]::new() }
+            Mock Get-AtlasAdministrativeUnit { $script:extendedCollectorCalls.administrativeUnits = 1; [AtlasCollectionResult]::new() }
+            Mock Get-AtlasPrivilegedGroupAssignment { $script:extendedCollectorCalls.pimGroups = 1; [AtlasCollectionResult]::new() }
+            Mock Get-AtlasEntitlementManagement { $script:extendedCollectorCalls.entitlementManagement = 1; [AtlasCollectionResult]::new() }
+            Mock Get-AtlasAccessReview { $script:extendedCollectorCalls.accessReviews = 1; [AtlasCollectionResult]::new() }
             Mock Write-AtlasReport { [System.IO.FileInfo]::new('C:\IdentityAtlasTest\index.html') }
+            Mock Start-AtlasReportServer {
+                [pscustomobject] @{ Url = 'http://127.0.0.1:8766/'; Port = 8766; ProcessId = 42 }
+            }
 
-            $invocation = Invoke-IdentityAtlas -CollectionProfile Governance -OutputPath 'C:\IdentityAtlasTest'
+            $invocation = Invoke-IdentityAtlas -CollectionProfile Governance -OutputPath 'C:\IdentityAtlasTest' -OpenReport
 
             $invocation.CollectionProfile | Should -Be 'Governance'
-            Assert-MockCalled Get-AtlasApplicationManagementPolicy -Times 1
-            Assert-MockCalled Get-AtlasCrossTenantAccess -Times 1
-            Assert-MockCalled Get-AtlasAdministrativeUnit -Times 1
-            Assert-MockCalled Get-AtlasPrivilegedGroupAssignment -Times 1
-            Assert-MockCalled Get-AtlasEntitlementManagement -Times 1
-            Assert-MockCalled Get-AtlasAccessReview -Times 1
+            $invocation.ReportUrl | Should -Be 'http://127.0.0.1:8766/'
+            $invocation.ServerProcessId | Should -Be 42
+            $script:extendedCollectorCalls.applicationManagementPolicies | Should -Be 1
+            $script:extendedCollectorCalls.crossTenantAccess | Should -Be 1
+            $script:extendedCollectorCalls.administrativeUnits | Should -Be 1
+            $script:extendedCollectorCalls.pimGroups | Should -Be 1
+            $script:extendedCollectorCalls.entitlementManagement | Should -Be 1
+            $script:extendedCollectorCalls.accessReviews | Should -Be 1
         }
 
         It 'collects nested group membership with every intermediate group retained' {
