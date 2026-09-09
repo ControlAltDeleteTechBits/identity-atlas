@@ -1,5 +1,23 @@
 # Identity Atlas changelog
 
+## 1.1.0 development candidate, not published
+
+1. Corrected nested application and directory role inheritance, separated PIM ownership and eligibility, and replaced percentage confidence with evidence labels.
+2. Bounded graph search by depth, examined edges, queue size, result count and time. Truncation is visible.
+3. Added tenant, schema and coverage checks to comparison. Missing records in incomplete snapshots are not confirmed removals.
+4. Added comparison JSON import to the Timeline view and masked evidence previews.
+5. Added public report opening, safe session-owned server stopping and connection diagnostics.
+6. Added optional collection settings and checkpoints, retaining evidence timestamps and refreshing failed collectors and their downstream stages.
+7. Added explicit delegated consent collection with opt-in Directory.Read.All consent.
+8. Updated contributor attribution checks and added a verified draft-first GitHub publication helper.
+9. Restricted missing-owner findings to tenant-owned applications, corrected service principal owner commands and guarded remediation arguments against executable tenant text. Requested Graph permissions are explicitly labelled as requests, not grants.
+10. Resolve missing referenced directory role definitions with one direct lookup per identifier across active and eligible assignments. Preserve assignments and partial evidence when lookup fails, returns no result or returns a different identifier.
+11. Record authentication collection status per user. Denied, failed, skipped, incomplete and older unknown responses are excluded from negative authentication findings. Successful empty responses remain distinct from missing evidence.
+12. Retain periodic terminal progress messages, with PIM group totals and failure counts. Collection summaries include complete and incomplete collectors, next actions and a report reopening command.
+13. Check optional delegated consent scopes in connection diagnostics and collection preflight. Scope checks explicitly leave endpoint authorisation unverified.
+14. Preserve cancellation through PIM and device request handlers, explain checkpoint recovery, and recognise Graph's camel-case Windows Hello and Temporary Access Pass method names.
+15. Print an interruption summary and clear progress state even when Ctrl+C has already stopped PowerShell's output pipeline. Verified with a real pipeline-stop regression and live cancellation and resume.
+
 This file records user-facing changes. Identity Atlas uses semantic versioning for stable releases and an additional preview label before version 1.0.
 
 ## 1.0.0

@@ -162,6 +162,8 @@ function Get-AtlasPrivilegedGroupAssignment {
     $failedRequestCount = 0
     $activeCount = 0
     $eligibleCount = 0
+    $groupIndex = 0
+    Update-AtlasProgressItem -CurrentItem 0 -TotalItems $groupNode.Count -Status 'PIM groups | Failed requests 0'
 
     foreach ($group in $groupNode) {
         $filter = [uri]::EscapeDataString("groupId eq '$($group.Id)'")
@@ -184,6 +186,7 @@ function Get-AtlasPrivilegedGroupAssignment {
                 }
             }
             catch {
+                if ($_.Exception -is [System.OperationCanceledException] -or $_.Exception -is [System.Management.Automation.PipelineStoppedException]) { throw }
                 $failedGroup[$group.Id] = $group.DisplayName
                 $failedRequestCount++
             }
@@ -240,6 +243,8 @@ function Get-AtlasPrivilegedGroupAssignment {
                 if ($scheduleSet.Activation -eq 'eligible') { $eligibleCount++ } else { $activeCount++ }
             }
         }
+        $groupIndex++
+        Update-AtlasProgressItem -CurrentItem $groupIndex -TotalItems $groupNode.Count -Status 'PIM groups' -FailedRequestCount $failedRequestCount
     }
 
     if ($failedGroup.Count -gt 0) {

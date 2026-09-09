@@ -37,11 +37,40 @@ function Get-AtlasDirectoryRole {
     }
 
     $roleKeyById = @{}
-    foreach ($definition in $definitionResponse.Items) {
+    $unresolvedRoles = @{}
+    $definitions = @($definitionResponse.Items)
+    $listedIds = @{}; foreach ($definition in $definitions) { $listedIds[$definition.id] = $true }
+    $lookupCount = 0; $lookupRequests = 0; $lookupRetries = 0
+    $referencedIds = @(@($assignmentResponse.Items) + @($eligibilityResponse.Items) | ForEach-Object { $_.roleDefinitionId } | Sort-Object -Unique)
+    foreach ($roleId in $referencedIds) {
+        if ($listedIds.ContainsKey($roleId)) { continue }
+        try {
+            $lookupCount++
+            $lookupRequests++
+            $endpoint = '/v1.0/roleManagement/directory/roleDefinitions/' + [uri]::EscapeDataString($roleId)
+            $lookup = Invoke-AtlasGraphRequest -Uri $endpoint
+            $lookupRequests += $lookup.Metrics.requestCount - 1
+            $lookupRetries += $lookup.Metrics.retryCount
+            $items = @($lookup.Items)
+            if ($items.Count -ne 1 -or $items[0].id -ne $roleId -or -not $items[0].displayName) { throw 'Direct role lookup returned an unexpected identifier or incomplete definition.' }
+            $definitions += $items[0]
+        }
+        catch [System.Management.Automation.PipelineStoppedException] { throw }
+        catch [System.OperationCanceledException] { throw }
+        catch {
+            $result.Status = 'partial'
+            $unresolvedRoles[$roleId] = $true
+            $result.Warnings.Add("Role definition '$roleId' could not be resolved. Assignment evidence retained: $(Get-AtlasSafeErrorDetail -ErrorRecord $_)")
+            $placeholder = New-AtlasNode -TenantId $TenantId -Id $roleId -Kind roleDefinition -DisplayName "Unresolved role $roleId" -Status unresolved -Source @{ collector = 'directoryRoles'; provider = 'microsoftGraph' }
+            $result.Nodes.Add($placeholder)
+            $roleKeyById[$roleId] = $placeholder.Key
+        }
+    }
+    foreach ($definition in $definitions) {
         $roleNode = New-AtlasNode -TenantId $TenantId -Id $definition.id -Kind 'roleDefinition' -DisplayName $definition.displayName -Properties @{
-            description = $definition.description
-            isBuiltIn = $definition.isBuiltIn
-            isEnabled = $definition.isEnabled
+            description = Get-AtlasResponseProperty -InputObject $definition -Name 'description'
+            isBuiltIn = Get-AtlasResponseProperty -InputObject $definition -Name 'isBuiltIn'
+            isEnabled = Get-AtlasResponseProperty -InputObject $definition -Name 'isEnabled'
         } -Source @{
             provider = 'microsoftGraph'
             apiVersion = 'v1.0'
@@ -55,11 +84,6 @@ function Get-AtlasDirectoryRole {
 
     foreach ($assignment in $assignmentResponse.Items) {
         $appScopeId = Get-AtlasResponseProperty -InputObject $assignment -Name 'appScopeId'
-        if (-not $roleKeyById.ContainsKey($assignment.roleDefinitionId)) {
-            $result.Status = 'partial'
-            $result.Warnings.Add("Role definition '$($assignment.roleDefinitionId)' was not returned.")
-            continue
-        }
 
         if ($keyById.ContainsKey($assignment.principalId)) {
             $principalKey = $keyById[$assignment.principalId]
@@ -82,6 +106,7 @@ function Get-AtlasDirectoryRole {
             appScopeId = $appScopeId
             activation = 'active'
         }
+        if ($unresolvedRoles.ContainsKey($assignment.roleDefinitionId)) { $evidence.Completeness = 'partial' }
         $result.Evidence.Add($evidence)
         $result.Edges.Add(
             (New-AtlasEdge -TenantId $TenantId -From $principalKey -To $roleKeyById[$assignment.roleDefinitionId] -Relationship 'assignedRole' -State @{
@@ -105,11 +130,6 @@ function Get-AtlasDirectoryRole {
         $eligibilityStartDateTime = Get-AtlasResponseProperty -InputObject $eligibility -Name 'startDateTime'
         $eligibilityEndDateTime = Get-AtlasResponseProperty -InputObject $eligibility -Name 'endDateTime'
         $eligibilityMemberType = Get-AtlasResponseProperty -InputObject $eligibility -Name 'memberType'
-        if (-not $roleKeyById.ContainsKey($eligibility.roleDefinitionId)) {
-            $result.Status = 'partial'
-            $result.Warnings.Add("Eligible role definition '$($eligibility.roleDefinitionId)' was not returned.")
-            continue
-        }
 
         if ($keyById.ContainsKey($eligibility.principalId)) {
             $principalKey = $keyById[$eligibility.principalId]
@@ -134,6 +154,7 @@ function Get-AtlasDirectoryRole {
             endDateTime = $eligibilityEndDateTime
             memberType = $eligibilityMemberType
         }
+        if ($unresolvedRoles.ContainsKey($eligibility.roleDefinitionId)) { $evidence.Completeness = 'partial' }
         $result.Evidence.Add($evidence)
         $result.Edges.Add(
             (New-AtlasEdge -TenantId $TenantId -From $principalKey -To $roleKeyById[$eligibility.roleDefinitionId] -Relationship 'eligibleRole' -State @{
@@ -156,11 +177,13 @@ function Get-AtlasDirectoryRole {
     }
 
     $result.Metrics = @{
-        roleDefinitionCount = $definitionResponse.Items.Count
+        roleDefinitionCount = $definitions.Count
+        directRoleLookupCount = $lookupCount
+        unresolvedRoleDefinitionCount = $unresolvedRoles.Count
         roleAssignmentCount = $assignmentResponse.Items.Count
         roleEligibilityCount = $eligibilityResponse.Items.Count
-        requestCount = $definitionResponse.Metrics.requestCount + $assignmentResponse.Metrics.requestCount + $eligibilityResponse.Metrics.requestCount
-        retryCount = $definitionResponse.Metrics.retryCount + $assignmentResponse.Metrics.retryCount + $eligibilityResponse.Metrics.retryCount
+        requestCount = $definitionResponse.Metrics.requestCount + $assignmentResponse.Metrics.requestCount + $eligibilityResponse.Metrics.requestCount + $lookupRequests
+        retryCount = $definitionResponse.Metrics.retryCount + $assignmentResponse.Metrics.retryCount + $eligibilityResponse.Metrics.retryCount + $lookupRetries
     }
     return $result
 }

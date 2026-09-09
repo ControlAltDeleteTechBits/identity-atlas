@@ -1,6 +1,6 @@
 @{
     RootModule        = 'IdentityAtlas.psm1'
-    ModuleVersion     = '1.0.0'
+    ModuleVersion     = '1.1.0'
     GUID              = 'f0ce5f0e-34dc-4c59-9c12-3e35b581e955'
     Author            = 'Mark Oldham'
     CompanyName       = 'Control Alt Delete Tech Bits'
@@ -19,6 +19,9 @@
         'Invoke-IdentityAtlas'
         'Export-IdentityAtlas'
         'Compare-IdentityAtlas'
+        'Open-IdentityAtlasReport'
+        'Stop-IdentityAtlasReport'
+        'Test-IdentityAtlasConnection'
     )
     CmdletsToExport   = @()
     VariablesToExport = @()
@@ -29,7 +32,7 @@
             LicenseUri   = 'https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/ControlAltDeleteTechBits/identity-atlas'
             IconUri      = 'https://raw.githubusercontent.com/ControlAltDeleteTechBits/identity-atlas/main/Web/assets/brand/identity-atlas-gallery-icon.svg'
-            ReleaseNotes = 'Stable release with injection-safe report comparisons, dedicated Microsoft Graph application support, local browser-data clearing and strengthened release controls. Release details: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v1.0.0'
+            ReleaseNotes = 'Unpublished 1.1.0 development candidate. Corrected access semantics, coverage-aware comparisons, local report commands, optional checkpoints and delegated consent. See Docs/IMPROVEMENT-PLAN.md in the repository. Published stable release remains v1.0.0.'
         }
     }
 }

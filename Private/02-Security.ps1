@@ -2,7 +2,9 @@ function Get-AtlasPermissionRequirement {
     [CmdletBinding()]
     param(
         [ValidateSet('Core', 'Governance')]
-        [string] $CollectionProfile = 'Core'
+        [string] $CollectionProfile = 'Core',
+
+        [switch] $IncludeConsent
     )
 
     $requirements = @(
@@ -26,10 +28,11 @@ function Get-AtlasPermissionRequirement {
         @{ profile = 'Governance'; collector = 'accessReviews'; recommended = 'AccessReview.Read.All'; accepted = @('AccessReview.Read.All', 'AccessReview.ReadWrite.All') }
     )
 
-    if ($CollectionProfile -eq 'Governance') {
-        return $requirements
+    $selected = @($requirements | Where-Object { $CollectionProfile -eq 'Governance' -or $_.profile -eq 'Core' })
+    if ($IncludeConsent) {
+        $selected += @{ profile = $CollectionProfile; collector = 'delegatedConsent'; recommended = 'Directory.Read.All'; accepted = @('Directory.Read.All', 'Directory.ReadWrite.All', 'DelegatedPermissionGrant.ReadWrite.All') }
     }
-    return @($requirements | Where-Object profile -eq 'Core')
+    return $selected
 }
 
 function Get-AtlasRecommendedScope {
@@ -70,7 +73,9 @@ function Get-AtlasPermissionAssessment {
         [string[]] $ContextScope,
 
         [ValidateSet('Core', 'Governance')]
-        [string] $CollectionProfile = 'Core'
+        [string] $CollectionProfile = 'Core',
+
+        [switch] $IncludeConsent
     )
 
     $grantedScope = @(
@@ -79,7 +84,7 @@ function Get-AtlasPermissionAssessment {
             ForEach-Object { $_.Trim() }
     )
 
-    $requirements = Get-AtlasPermissionRequirement -CollectionProfile $CollectionProfile
+    $requirements = Get-AtlasPermissionRequirement -CollectionProfile $CollectionProfile -IncludeConsent:$IncludeConsent
 
     $missing = [System.Collections.Generic.List[object]]::new()
     foreach ($requirement in $requirements) {
@@ -104,6 +109,8 @@ function Get-AtlasPermissionAssessment {
         grantedScopes = $grantedScope
         missingRequirements = @($missing)
         recommendedScopes = @($requirements.recommended | Sort-Object -Unique)
+        endpointAccess = 'unverified'
+        includeConsent = [bool] $IncludeConsent
     }
 }
 
@@ -133,10 +140,12 @@ function New-AtlasPermissionPreflightResult {
         [string[]] $ContextScope,
 
         [ValidateSet('Core', 'Governance')]
-        [string] $CollectionProfile = 'Core'
+        [string] $CollectionProfile = 'Core',
+
+        [switch] $IncludeConsent
     )
 
-    $assessment = Get-AtlasPermissionAssessment -ContextScope $ContextScope -CollectionProfile $CollectionProfile
+    $assessment = Get-AtlasPermissionAssessment -ContextScope $ContextScope -CollectionProfile $CollectionProfile -IncludeConsent:$IncludeConsent
     $missingScope = Get-AtlasMissingRecommendedScope -MissingRequirement $assessment.missingRequirements
     $result = [AtlasCollectionResult]::new()
     $result.Status = $assessment.status
@@ -146,6 +155,9 @@ function New-AtlasPermissionPreflightResult {
         missingScopeCount = $assessment.missingRequirements.Count
         missingScopes = $missingScope
         collectionProfile = $CollectionProfile
+        includeConsent = [bool] $IncludeConsent
+        endpointAccess = $assessment.endpointAccess
+        missingRequirements = @($assessment.missingRequirements)
     }
 
     if ($assessment.missingRequirements.Count -gt 0) {
@@ -230,14 +242,17 @@ function Invoke-AtlasCollector {
     )
 
     Start-AtlasProgressStep -Name $Name -DisplayName $DisplayName -Step $Step
+    $cachedResult = Get-AtlasCheckpointResult -Name $Name
+    if ($cachedResult) {
+        Complete-AtlasProgressStep -Result $cachedResult
+        return $cachedResult
+    }
 
     try {
         $result = & $Collector
         if ($null -eq $result) {
             throw "The '$Name' collector returned no result."
         }
-        Complete-AtlasProgressStep -Result $result
-        return $result
     }
     catch [System.Management.Automation.PipelineStoppedException] {
         throw
@@ -254,9 +269,10 @@ function Invoke-AtlasCollector {
             retryCount = 0
             failed = $true
         }
-        Complete-AtlasProgressStep -Result $result
-        return $result
     }
+    Complete-AtlasProgressStep -Result $result
+    Save-AtlasCheckpointResult -Name $Name -Result $result
+    return $result
 }
 
 function Test-AtlasGraphUri {

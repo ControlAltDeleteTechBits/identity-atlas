@@ -8,6 +8,7 @@ comparisons/
 exports/
 TestResults/
 coverage/
+*.checkpoint/
 
 # Local development and editor state
 .codex/
