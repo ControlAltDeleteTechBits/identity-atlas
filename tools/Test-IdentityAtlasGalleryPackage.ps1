@@ -114,8 +114,8 @@ Add-AtlasGalleryCheck -Name 'Gallery icon' -Passed (
 
 Add-AtlasGalleryCheck -Name 'Release notes metadata' -Passed (
     -not [string]::IsNullOrWhiteSpace($psData.ReleaseNotes) -and
-    $psData.ReleaseNotes -match 'v1\.0\.0'
-) -Evidence 'The package metadata links to the matching stable GitHub release.'
+    $psData.ReleaseNotes.Contains("https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/RELEASE-NOTES-v$($manifest.ModuleVersion).md")
+) -Evidence 'The package metadata links to release notes matching the module version.'
 
 if ($SkipPackage) {
     return [pscustomobject] @{
