@@ -1,6 +1,6 @@
 # Identity Atlas changelog
 
-## 1.1.0 development candidate, not published
+## 1.1.0
 
 1. Corrected nested application and directory role inheritance, separated PIM ownership and eligibility, and replaced percentage confidence with evidence labels.
 2. Bounded graph search by depth, examined edges, queue size, result count and time. Truncation is visible.

@@ -32,7 +32,7 @@
             LicenseUri   = 'https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/ControlAltDeleteTechBits/identity-atlas'
             IconUri      = 'https://raw.githubusercontent.com/ControlAltDeleteTechBits/identity-atlas/main/Web/assets/brand/identity-atlas-gallery-icon.svg'
-            ReleaseNotes = 'Unpublished 1.1.0 development candidate. Corrected access semantics, coverage-aware comparisons, local report commands, optional checkpoints and delegated consent. See Docs/IMPROVEMENT-PLAN.md in the repository. Published stable release remains v1.0.0.'
+            ReleaseNotes = 'Version 1.1.0: corrected access semantics, per-user authentication coverage, safer comparisons, local report commands, checkpoint recovery and optional delegated consent. Release notes and validation limits: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/RELEASE-NOTES-v1.1.0.md'
         }
     }
 }
