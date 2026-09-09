@@ -102,6 +102,7 @@
       return;
     }
     pendingRequests.delete(event.data.requestId);
+    if (Array.isArray(event.data.result)) event.data.result.diagnostics = event.data.diagnostics;
     pending.resolve(event.data.result);
   };
 
@@ -130,6 +131,7 @@
       application: 'App registration',
       applicationCredential: 'Application credential',
       apiPermission: 'API permission',
+      oauth2PermissionGrant: 'Delegated consent grant',
       conditionalAccessPolicy: 'Conditional Access policy',
       conditionalAccessScope: 'Conditional Access scope',
       namedLocation: 'Named location',
@@ -224,6 +226,9 @@
       assignedRole: 'Assigned role',
       eligibleRole: 'Eligible role',
       assignedAppRole: 'Assigned app role',
+      hasDelegatedConsent: 'Has granted delegated consent',
+      grantsDelegatedScopes: 'Granted delegated scopes on API',
+      subjectOfDelegatedConsent: 'User covered by delegated consent',
       hasServicePrincipal: 'Enterprise app',
       hasCredential: 'Has credential',
       requiresApiPermission: 'Requires API permission',
@@ -645,7 +650,7 @@
         node: nodesByKey.get(edge.From),
         meta: `Requires ${node.DisplayName}`
       }));
-      description = 'Applications requiring this API permission in the collected graph.';
+      description = 'Applications requesting this API permission in their registration. This is not evidence that consent was granted.';
     }
     else if (['application', 'servicePrincipal'].includes(node.Kind)) {
       const permissionItems = outboundRelationships(node.Key, 'requiresApiPermission').map((edge) => ({
@@ -660,8 +665,15 @@
         node: nodesByKey.get(edge.To),
         meta: 'Application owner'
       }));
-      items = [...permissionItems, ...assignmentItems, ...ownerItems];
-      description = 'Collected owners, app role assignments and required API permissions that could increase the impact of a change.';
+      const consentItems = outboundRelationships(node.Key, 'hasDelegatedConsent').map((edge) => ({ node: nodesByKey.get(edge.To), meta: `${edge.State.consentType}: ${edge.State.scope}` }));
+      const apiAssignments = outboundRelationships(node.Key, 'assignedAppRole').map((edge) => ({ node: nodesByKey.get(edge.To), meta: `Granted application role: ${edge.State?.appRoleDisplayName || edge.State?.appRoleId || 'Unresolved role'}` }));
+      items = [...consentItems, ...apiAssignments, ...permissionItems, ...assignmentItems, ...ownerItems];
+      description = 'Requested permissions, granted consent, app role assignments and ownership are separate relationships. Delegated consent remains subject to the signed-in user permissions. Missing consent data is not proof of no consent.';
+    }
+    else if (node.Kind === 'oauth2PermissionGrant') {
+      items = [...inboundRelationships(node.Key, 'hasDelegatedConsent'), ...inboundRelationships(node.Key, 'subjectOfDelegatedConsent')].map((edge) => ({ node: nodesByKey.get(edge.From), meta: formatRelationship(edge.Relationship) }));
+      items.push(...outboundRelationships(node.Key, 'grantsDelegatedScopes').map((edge) => ({ node: nodesByKey.get(edge.To), meta: `Granted scopes: ${edge.State.scope}` })));
+      description = `${node.Properties.consentType === 'AllPrincipals' ? 'Tenant-wide delegated consent' : 'Individual delegated consent'}. This is consent evidence, not proof of every user being able to access every resource.`;
     }
     else if (node.Kind === 'roleDefinition') {
       items = [...inboundRelationships(node.Key, 'assignedRole'), ...inboundRelationships(node.Key, 'eligibleRole')].map((edge) => ({
@@ -742,6 +754,9 @@
       Status: node.Status,
       ...node.Properties
     };
+    if (['user', 'guestUser'].includes(node.Kind)) {
+      properties['Authentication collection'] = authenticationCollectionStatus(node).label;
+    }
 
     for (const [name, value] of Object.entries(properties)) {
       grid.append(
@@ -1112,13 +1127,30 @@
     return Array.from(edgeKeys).map((key) => edgesByKey.get(key)).filter(Boolean);
   }
 
+  function authenticationCollectionStatus(node) {
+    const collector = report.manifest.coverage?.collectors?.find((item) => item.name === 'devicesAndAuthentication');
+    const entry = collector?.metrics?.authenticationByUser?.[node.Key];
+    const labels = {
+      complete: 'Collected successfully. Registration evidence does not prove MFA enforcement.',
+      empty: 'Collected successfully: no authentication methods returned.',
+      accessDenied: 'Access denied by Microsoft Graph. Authentication methods are unknown.',
+      failed: 'Request failed. Authentication methods are unknown.',
+      partial: 'Incomplete response. Authentication methods are not fully known.',
+      skipped: 'Skipped by request. Authentication methods are unknown.',
+      notCollected: 'Per-user collection status is unavailable. Full method coverage is unknown; any existing method evidence is retained.'
+    };
+    const status = Object.hasOwn(labels, entry?.status) ? entry.status :
+      (collector?.metrics?.authenticationMethodsSkipped ? 'skipped' : 'notCollected');
+    return { status, label: labels[status], complete: ['complete', 'empty'].includes(status) };
+  }
+
   function nodeHasStrongAuthentication(node) {
     const methods = outboundRelationships(node.Key, 'hasAuthenticationMethod')
       .map((edge) => nodesByKey.get(edge.To))
       .filter(Boolean);
     return methods.some((method) => {
-      const haystack = `${method.DisplayName} ${method.Properties.methodType || ''} ${method.Properties.type || ''}`.toLocaleLowerCase('en-GB');
-      return ['fido', 'passkey', 'windows hello', 'authenticator', 'temporary access pass', 'certificate'].some((term) => haystack.includes(term));
+      const haystack = `${method.DisplayName} ${method.Properties.methodType || ''} ${method.Properties.type || ''}`.toLocaleLowerCase('en-GB').replace(/\s+/g, '');
+      return ['fido', 'passkey', 'windowshello', 'authenticator', 'temporaryaccesspass', 'certificate'].some((term) => haystack.includes(term));
     });
   }
 
@@ -1132,7 +1164,13 @@
         }
       }
     }
-    return Array.from(privilegedUsers).filter((node) => !nodeHasStrongAuthentication(node));
+    return Array.from(privilegedUsers).filter((node) => authenticationCollectionStatus(node).complete && !nodeHasStrongAuthentication(node));
+  }
+
+  function isTenantManagedApplication(node, tenantId) {
+    if (node.Kind === 'application') return true;
+    return node.Kind === 'servicePrincipal' && node.Properties?.servicePrincipalType === 'Application' &&
+      Boolean(tenantId) && String(node.Properties?.appOwnerOrganizationId || '').toLowerCase() === String(tenantId).toLowerCase();
   }
 
   function collectInsights() {
@@ -1140,13 +1178,13 @@
     return [
       {
         id: 'ownerless-applications',
-        title: 'Applications without owners',
+        title: 'Tenant-owned applications without collected owners',
         severity: 'High',
-        description: 'App registrations and enterprise applications with no collected owner relationship.',
+        description: 'App registrations and tenant-owned application service principals with no collected owner relationship. External publishers and managed identities are excluded. Missing evidence is not proof of missing ownership.',
         why: 'Ownerless applications make change approval, incident response and credential rotation harder.',
-        action: 'Assign at least two accountable owners and review ownership during service transitions.',
+        action: 'Verify owner collection coverage and current owners first. Agree accountable owners before making any change.',
         nodes: report.nodes.filter((node) =>
-          ['application', 'servicePrincipal'].includes(node.Kind) &&
+          isTenantManagedApplication(node, report.manifest.tenant.id) &&
           outboundRelationships(node.Key, 'ownedBy').length === 0
         )
       },
@@ -1161,9 +1199,9 @@
       },
       {
         id: 'graph-application-permissions',
-        title: 'Microsoft Graph application permissions',
+        title: 'Requested Microsoft Graph application permissions',
         severity: 'High',
-        description: 'Required API permissions where the resource app is Microsoft Graph and the permission type is Role.',
+        description: 'Required API permissions where the resource app is Microsoft Graph and the permission type is Role. A request is not evidence of admin consent or a granted permission.',
         why: 'Application permissions can grant broad tenant-wide access without a signed-in user.',
         action: 'Confirm admin consent is still required, document the business owner and remove unused permissions.',
         nodes: report.nodes.filter((node) =>
@@ -1209,13 +1247,14 @@
       },
       {
         id: 'users-without-authentication-methods',
-        title: 'Users without collected authentication methods',
+        title: 'Users with no authentication methods returned',
         severity: 'Medium',
-        description: 'Users and guest users with no collected authentication method relationship.',
-        why: 'Missing authentication method evidence can hide weak sign-in protection or incomplete report coverage.',
-        action: 'Register strong authentication methods or confirm the collection permissions cover authentication methods.',
+        description: 'Successful per-user collection returned no methods. Failed, denied, skipped and unknown requests are excluded.',
+        why: 'An empty registration response needs review in the context of the identity and its authentication provider. It does not prove that MFA is disabled.',
+        action: 'Verify the current registration and authentication provider before deciding whether registration changes are needed.',
         nodes: report.nodes.filter((node) =>
           ['user', 'guestUser'].includes(node.Kind) &&
+          authenticationCollectionStatus(node).status === 'empty' &&
           outboundRelationships(node.Key, 'hasAuthenticationMethod').length === 0
         )
       },
@@ -1267,9 +1306,9 @@
         id: 'privileged-users-without-strong-auth',
         title: 'Privileged users without strong authentication evidence',
         severity: 'Critical',
-        description: 'Users with collected privileged role assignments or eligibility and no collected strong authentication method.',
+        description: 'Users with collected privileged role assignments or eligibility whose successful authentication collection returned no recognised strong method. Unknown collection is excluded. Registration is not proof of enforcement.',
         why: 'Privileged users should use phishing-resistant or strong authentication before role activation or admin sign-in.',
-        action: 'Register a strong method, then require it through Conditional Access and PIM activation controls.',
+        action: 'Verify the current registration, authentication provider and policy coverage before planning authentication changes.',
         nodes: privilegedRoleUsersWithoutStrongAuth()
       }
     ];
@@ -1280,40 +1319,45 @@
   }
 
   function remediationForInsight(insight, node) {
-    const objectId = node.Id || '<object-id>';
-    const appId = node.Properties.appId || '<app-id>';
+    // Only UUIDs enter executable arguments. Tenant display text stays on one comment line.
+    const safeId = (value, placeholder) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || '')) ? String(value) : placeholder;
+    const objectId = safeId(node.Id, '<object-id>');
+    const appId = safeId(node.Properties.appId, '<app-id>');
+    const keyId = safeId(node.Properties.keyId, '<key-id>');
+    const displayName = String(node.DisplayName || '').replace(/[\r\n\u2028\u2029`]/g, ' ');
+    const ownerResource = node.Kind === 'servicePrincipal' ? 'ServicePrincipal' : 'Application';
     const snippets = {
       'ownerless-applications': [
-        `# Review owners for ${node.DisplayName}`,
-        `Get-MgApplicationOwner -ApplicationId '${objectId}'`,
+        `# Review owners for ${displayName}`,
+        `Get-Mg${ownerResource}Owner -${ownerResource}Id '${objectId}'`,
         `# Add owner after selecting the correct owner object`,
-        `New-MgApplicationOwnerByRef -ApplicationId '${objectId}' -BodyParameter @{ '@odata.id' = 'https://graph.microsoft.com/v1.0/directoryObjects/<owner-object-id>' }`
+        `New-Mg${ownerResource}OwnerByRef -${ownerResource}Id '${objectId}' -BodyParameter @{ '@odata.id' = 'https://graph.microsoft.com/v1.0/directoryObjects/<owner-object-id>' }`
       ],
       'expiring-credentials': [
-        `# Review credentials for ${node.DisplayName}`,
+        `# Review credentials for ${displayName}`,
         `Get-MgApplication -ApplicationId '<application-object-id>' | Select-Object -ExpandProperty PasswordCredentials`,
         `# Remove the expired credential after confirming replacement`,
-        `Remove-MgApplicationPassword -ApplicationId '<application-object-id>' -KeyId '${node.Properties.keyId || '<key-id>'}'`
+        `Remove-MgApplicationPassword -ApplicationId '<application-object-id>' -KeyId '${keyId}'`
       ],
       'graph-application-permissions': [
-        `# Find applications requiring ${node.DisplayName}`,
+        `# Find applications requiring ${displayName}`,
         `Get-MgApplication -Filter "appId eq '${appId}'"`,
         `# Review required resource access and admin consent before removing permissions`
       ],
       'eligible-privileged-roles': [
-        `# Review eligible directory role access for ${node.DisplayName}`,
+        `# Review eligible directory role access for ${displayName}`,
         `Get-MgRoleManagementDirectoryRoleEligibilitySchedule -Filter "principalId eq '${objectId}'"`
       ],
       'conditional-access-exclusions': [
-        `# Review Conditional Access exclusions affecting ${node.DisplayName}`,
+        `# Review Conditional Access exclusions affecting ${displayName}`,
         `Get-MgIdentityConditionalAccessPolicy | Where-Object { $_.Conditions.Users.ExcludeUsers -contains '${objectId}' -or $_.Conditions.Users.ExcludeGroups -contains '${objectId}' }`
       ],
       'non-compliant-devices': [
-        `# Review device compliance for ${node.DisplayName}`,
+        `# Review device compliance for ${displayName}`,
         `Get-MgDevice -DeviceId '${objectId}' | Select-Object DisplayName,IsCompliant,ApproximateLastSignInDateTime,AccountEnabled`
       ],
       'users-without-authentication-methods': [
-        `# Review registered authentication methods for ${node.DisplayName}`,
+        `# Review registered authentication methods for ${displayName}`,
         `Get-MgUserAuthenticationMethod -UserId '${objectId}'`
       ],
       'trusted-named-locations': [
@@ -1341,7 +1385,7 @@
         `Get-MgRoleManagementDirectoryRoleAssignmentSchedule -Filter "principalId eq '${objectId}'"`
       ]
     };
-    return (snippets[insight.id] || [`# Review ${node.DisplayName}`, `Get-MgDirectoryObject -DirectoryObjectId '${objectId}'`]).join('\n');
+    return (snippets[insight.id] || [`# Review ${displayName}`, `Get-MgDirectoryObject -DirectoryObjectId '${objectId}'`]).join('\n');
   }
 
   function exportInsightEvidence(insight) {
@@ -1404,7 +1448,7 @@
       lines.push('');
     }
 
-    downloadTextFile(`identity-atlas-insight-${insight.id}.md`, `${lines.join('\n')}\n`, 'text/markdown');
+    previewEvidenceExport(`${lines.join('\n')}\n`, maskedEvidence(relatedEdgesForNodes(visibleNodes)), `identity-atlas-insight-${insight.id}.md`);
   }
 
   function renderInsightsDetails() {
@@ -1435,6 +1479,10 @@
         makeElement('p', 'path-narrative', `Action: ${insight.action}`),
         exportButton
       );
+      if (['users-without-authentication-methods', 'privileged-users-without-strong-auth'].includes(insight.id)) {
+        const unknownCount = report.nodes.filter((node) => ['user', 'guestUser'].includes(node.Kind) && !authenticationCollectionStatus(node).complete).length;
+        section.append(makeElement('p', 'muted-text', `${unknownCount} user(s) have unknown or incomplete authentication collection and are excluded from negative authentication findings. Open a user for its collection status.`));
+      }
       if (!insight.nodes.length) {
         section.append(makeElement('p', 'muted-text', 'No matching objects in the collected data.'));
       }
@@ -1564,6 +1612,42 @@
     elements.objectHeading.textContent = 'Timeline';
     elements.objectSummary.textContent = `${events.length} dated event${events.length === 1 ? '' : 's'} found in this report.`;
     const panel = makeElement('div', 'timeline-list');
+    const comparisonInput = makeElement('input');
+    comparisonInput.type = 'file';
+    comparisonInput.accept = '.json,application/json';
+    comparisonInput.setAttribute('aria-label', 'Open comparison JSON for this report');
+    const comparisonPanel = makeElement('section', 'evidence-card');
+    comparisonPanel.setAttribute('aria-live', 'polite');
+    panel.append(makeElement('h4', null, 'Compare snapshots'), makeElement('p', 'muted-text', 'Choose comparison.json generated by Compare-IdentityAtlas, using this report as the later snapshot. The file stays in this browser.'), comparisonInput, comparisonPanel);
+    comparisonInput.addEventListener('change', async () => {
+      comparisonPanel.replaceChildren();
+      try {
+        const file = comparisonInput.files[0];
+        if (!file || file.size > 64 * 1024 * 1024) throw new Error('Select a comparison JSON file smaller than 64 MB.');
+        const comparison = JSON.parse(await file.text());
+        if (comparison.tenantId !== report.manifest.tenant.id || comparison.schemaVersion !== report.manifest.schemaVersion || comparison.difference?.generatedAtUtc !== report.manifest.generatedAtUtc) throw new Error('The comparison must match this tenant, schema and later snapshot timestamp.');
+        comparisonPanel.append(makeElement('p', null, `Snapshots: ${comparison.reference.generatedAtUtc} to ${comparison.difference.generatedAtUtc}. These are observation times, not exact change times.`));
+        for (const warning of comparison.coverageWarnings || []) comparisonPanel.append(makeElement('p', 'muted-text', String(warning)));
+        for (const [key, title] of [['addedNodes', 'Newly observed objects'], ['removedNodes', 'Removed objects'], ['changedNodes', 'Changed objects'], ['unobservedNodes', 'Objects not observed'], ['addedEdges', 'Newly observed relationships'], ['removedEdges', 'Removed relationships'], ['changedEdges', 'Changed relationships'], ['unobservedEdges', 'Relationships not observed']]) {
+          const items = comparison[key] || [];
+          if (!Array.isArray(items)) throw new Error('Invalid comparison record list.');
+          const section = makeElement('details');
+          section.append(makeElement('summary', null, `${title}: ${items.length}`));
+          for (const item of items.slice(0, 100)) {
+            const value = item.after || item;
+            const row = makeElement('section', 'evidence-card');
+            row.append(makeElement('p', null, value.displayName || `${value.from} ${formatRelationship(value.relationship || '')} ${value.to}`));
+            if (item.beforeProperties || item.afterProperties) row.append(makeElement('pre', null, JSON.stringify({ before: item.beforeProperties, after: item.afterProperties }, null, 2)));
+            else if (item.before || item.after) row.append(makeElement('pre', null, JSON.stringify({ before: item.before?.state, after: item.after?.state }, null, 2)));
+            if (nodesByKey.has(item.key)) row.append(openNodeButton(nodesByKey.get(item.key), 'Investigate affected object'));
+            for (const endpointKey of new Set([value.fromKey, value.toKey])) if (nodesByKey.has(endpointKey)) row.append(openNodeButton(nodesByKey.get(endpointKey), 'Investigate affected endpoint'));
+            section.append(row);
+          }
+          if (items.length > 100) section.append(makeElement('p', null, 'First 100 shown. Full results remain in the comparison file.'));
+          comparisonPanel.append(section);
+        }
+      } catch (error) { comparisonPanel.replaceChildren(makeElement('p', null, error.message)); }
+    });
 
     if (!events.length) {
       panel.append(makeElement('p', 'muted-text', viewLabels.timeline.empty));
@@ -2039,7 +2123,7 @@
     if (['crossTenantAccessPolicy', 'externalTenant'].includes(kind)) {
       return 'External access';
     }
-    if (['servicePrincipal', 'application', 'applicationCredential', 'apiPermission'].includes(kind)) {
+    if (['servicePrincipal', 'application', 'applicationCredential', 'apiPermission', 'oauth2PermissionGrant'].includes(kind)) {
       return 'Applications';
     }
     if (kind === 'group') {
@@ -2168,6 +2252,9 @@
     const nodes = path.nodeKeys.map((key) => nodesByKey.get(key));
     const edges = path.edgeKeys.map((key) => edgesByKey.get(key));
     if (edges.length === 1) {
+      if (['pimActiveOwner', 'pimEligibleOwner'].includes(edges[0].Relationship)) {
+        return `${nodes[0].DisplayName} has ${formatRelationship(edges[0].Relationship)} status for ${nodes[1].DisplayName}. Ownership is not group membership.`;
+      }
       if (edges[0].Relationship === 'ownedBy') {
         return `${nodes[0].DisplayName} is owned by ${nodes[1].DisplayName}.`;
       }
@@ -2202,7 +2289,7 @@
       if (nodes[1].Kind === 'accessReviewInstance') {
         return `${nodes[0].DisplayName} was included in ${nodes[1].DisplayName}.`;
       }
-      return `${nodes[0].DisplayName} has a direct active assignment to ${nodes[1].DisplayName}.`;
+      return `${nodes[0].DisplayName} has a collected ${formatRelationship(edges[0].Relationship).toLocaleLowerCase('en-GB')} relationship to ${nodes[1].DisplayName}.`;
     }
     if (edges.length > 2) {
       const steps = edges.map((edge, index) => `${formatRelationship(edge.Relationship)} ${nodes[index + 1].DisplayName}`);
@@ -2225,7 +2312,7 @@
         `${nodes[1].DisplayName} is included in the ${nodes[2].DisplayName} Conditional Access policy.`;
     }
     return `${nodes[0].DisplayName} is a direct member of ${nodes[1].DisplayName}. ` +
-      `${nodes[1].DisplayName} is a role-assignable group with an active assignment to ${nodes[2].DisplayName}.`;
+      `${nodes[1].DisplayName} has a collected ${formatRelationship(edges[1].Relationship).toLocaleLowerCase('en-GB')} relationship to ${nodes[2].DisplayName}.`;
   }
 
   function pathConfidence(path) {
@@ -2257,7 +2344,7 @@
 
     if (!expectedEvidence) {
       return {
-        label: 'Low confidence',
+        label: 'Evidence unavailable',
         score: 30,
         severity: 'High',
         detail: details.join(' ')
@@ -2267,22 +2354,22 @@
     const score = Math.round((completeEvidence / expectedEvidence) * 100);
     if (score === 100 && !details.length) {
       return {
-        label: 'High confidence',
+        label: 'Evidence complete',
         score,
         severity: 'Low',
-        detail: 'Every relationship in this path has complete collected evidence.'
+        detail: 'Every relationship has collected evidence. This does not prove effective authorisation or a successful sign-in.'
       };
     }
     if (score >= 60) {
       return {
-        label: 'Medium confidence',
+        label: 'Evidence partial',
         score,
         severity: 'Medium',
         detail: details.join(' ') || 'Most relationship evidence is complete.'
       };
     }
     return {
-      label: 'Low confidence',
+      label: 'Evidence partial',
       score,
       severity: 'High',
       detail: details.join(' ') || 'Evidence coverage is limited.'
@@ -2299,7 +2386,10 @@
     elements.pathDetail.append(
       makeElement('p', 'path-number', `Path ${index + 1}`),
       makeElement('h3', null, nodes[nodes.length - 1].DisplayName),
-      makeElement('span', `confidence-badge ${severityClass(confidence.severity)}`, `${confidence.label} (${confidence.score}%)`),
+      makeElement('span', `confidence-badge ${severityClass(confidence.severity)}`, confidence.label),
+      makeElement('p', 'path-narrative', path.classification || 'Collected relationship'),
+      makeElement('p', 'path-narrative', `Assignment: ${path.assignmentState || 'Unknown'}`),
+      makeElement('p', 'path-narrative', `Report observed at: ${path.observedAt || report.manifest.generatedAtUtc}. Individual evidence timestamps appear below.`),
       makeElement('p', 'path-narrative', createNarrative(path)),
       makeElement('p', 'path-narrative', confidence.detail)
     );
@@ -2347,8 +2437,9 @@
     elements.pathDetail.replaceChildren();
     elements.explanationStatus.textContent =
       paths.length
-        ? `${paths.length} access path${paths.length === 1 ? '' : 's'} found.`
-        : 'No access path was found in the collected data.';
+        ? `${paths.length} collected route${paths.length === 1 ? '' : 's'} found.`
+        : 'No supported route was found in the collected data. This is not proof of no access.';
+    if (paths.diagnostics?.truncated) elements.explanationStatus.textContent += ` Results limited: ${paths.diagnostics.reason}`;
 
     paths.forEach((path, index) => {
       const target = nodesByKey.get(path.nodeKeys[path.nodeKeys.length - 1]);
@@ -2356,7 +2447,7 @@
       button.type = 'button';
       button.append(
         makeElement('span', 'path-target', target.DisplayName),
-        makeElement('span', 'path-classification', `${path.edgeKeys.length === 1 ? 'Direct assignment' : 'Group-based assignment'} | ${pathConfidence(path).label}`)
+        makeElement('span', 'path-classification', `${path.classification || 'Collected relationship'} | ${pathConfidence(path).label}`)
       );
       button.addEventListener('click', () => {
         for (const sibling of elements.pathList.querySelectorAll('button')) {
@@ -2575,7 +2666,38 @@
       }
       lines.push('');
     }
-    downloadTextFile('identity-atlas-evidence.md', `${lines.join('\n')}\n`, 'text/markdown');
+    if (currentPath) lines.push(`Interpretation: ${currentPath.classification || 'Collected relationship'}`, 'Collected evidence does not prove effective authorisation.');
+    previewEvidenceExport(`${lines.join('\n')}\n`, maskedEvidence(edgeKeys.map((key) => edgesByKey.get(key)).filter(Boolean)), 'identity-atlas-evidence.md');
+  }
+
+  function maskedEvidence(edges) {
+    // Deliberate allowlist: no tenant strings, identifiers, state, endpoints,
+    // descriptions or remediation commands enter a masked export.
+    const aliases = new Map();
+    const alias = (key) => { if (!aliases.has(key)) aliases.set(key, `Object ${aliases.size + 1}`); return aliases.get(key); };
+    const allowed = new Set(['memberOf', 'assignedRole', 'eligibleRole', 'assignedAppRole', 'ownedBy', 'hasCredential', 'requiresApiPermission', 'registeredDevice', 'hasAuthenticationMethod', 'conditionalAccessIncludes', 'conditionalAccessExcludes', 'pimActiveMember', 'pimEligibleMember', 'pimActiveOwner', 'pimEligibleOwner', 'hasDelegatedConsent', 'grantsDelegatedScopes']);
+    const lines = ['# Identity Atlas masked evidence', '', 'Identifiers, names, free text and remediation commands omitted. Relationship structure can still be sensitive. Review before sharing.', 'Evidence is not proof of effective authorisation.', ''];
+    for (const edge of edges) lines.push(`${alias(edge.From)} > ${allowed.has(edge.Relationship) ? formatRelationship(edge.Relationship) : 'Collected relationship'} > ${alias(edge.To)}`);
+    return lines.join('\n');
+  }
+
+  function previewEvidenceExport(fullText, maskedText, fileName) {
+    const dialog = makeElement('dialog', 'evidence-export-dialog');
+    const heading = makeElement('h3', null, 'Review evidence before exporting');
+    heading.id = 'evidence-export-heading';
+    dialog.setAttribute('aria-labelledby', heading.id);
+    const label = makeElement('label', null, ' Mask tenant fields');
+    const mask = makeElement('input');
+    mask.type = 'checkbox'; mask.checked = true; label.prepend(mask);
+    const preview = makeElement('pre', null, maskedText);
+    const save = makeElement('button', null, 'Download reviewed evidence'); save.type = 'button';
+    const close = makeElement('button', null, 'Cancel'); close.type = 'button';
+    mask.addEventListener('change', () => { preview.textContent = mask.checked ? maskedText : fullText; });
+    save.addEventListener('click', () => { downloadTextFile(fileName, mask.checked ? maskedText : fullText, 'text/markdown'); dialog.close(); });
+    close.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => dialog.remove());
+    dialog.append(heading, makeElement('p', null, 'Full evidence contains sensitive tenant data. Masking reduces disclosure; it does not guarantee anonymity.'), label, preview, save, close);
+    document.body.append(dialog); dialog.showModal();
   }
 
   function populateRelationshipFilter() {
@@ -2692,7 +2814,7 @@
   renderPinnedObjects();
   updatePinButton();
   populateRelationshipFilter();
-  requestWorker('initialise', { nodes: report.nodes, edges: report.edges })
+  requestWorker('initialise', { nodes: report.nodes, edges: report.edges, observedAt: report.manifest.generatedAtUtc })
     .then(updateSearch)
     .then(() => {
       const preferredNode = report.nodes.find((node) => node.DisplayName === 'Mark Oldham') || report.nodes[0];

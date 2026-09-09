@@ -43,9 +43,12 @@ Describe 'Identity Atlas isolated test fixture' {
             ConvertFrom-Json
     }
 
-    It 'exports the four public commands' {
+    It 'exports the seven public commands' {
         $commands = Get-Command -Module IdentityAtlas | Select-Object -ExpandProperty Name
-        $commands.Count | Should -Be 4
+        $commands.Count | Should -Be 7
+        ($commands -contains 'Open-IdentityAtlasReport') | Should -Be $true
+        ($commands -contains 'Stop-IdentityAtlasReport') | Should -Be $true
+        ($commands -contains 'Test-IdentityAtlasConnection') | Should -Be $true
         ($commands -contains 'Connect-IdentityAtlas') | Should -Be $true
         ($commands -contains 'Invoke-IdentityAtlas') | Should -Be $true
         ($commands -contains 'Export-IdentityAtlas') | Should -Be $true
@@ -63,7 +66,7 @@ Describe 'Identity Atlas isolated test fixture' {
 
     It 'records read-only security metadata without serialising tokens' {
         $script:report.manifest.schemaVersion | Should -Be '1.1.0'
-        $script:report.manifest.reportVersion | Should -Be '1.0.0'
+        $script:report.manifest.reportVersion | Should -Be '1.1.0'
         $script:report.manifest.security.readOnlyCollection | Should -Be $true
         $script:report.manifest.security.tokenDataSerialized | Should -Be $false
         $script:report.manifest.security.browserNetworkAccess | Should -Be 'disabled'

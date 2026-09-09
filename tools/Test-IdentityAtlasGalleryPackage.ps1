@@ -86,9 +86,9 @@ Add-AtlasGalleryCheck -Name 'Module identity' -Passed (
 ) -Evidence 'The package name, author and publisher match the approved Identity Atlas metadata.'
 
 Add-AtlasGalleryCheck -Name 'Stable version' -Passed (
-    $manifest.ModuleVersion -eq '1.0.0' -and
+    [version]$manifest.ModuleVersion -ge [version]'1.0.0' -and
     [string]::IsNullOrWhiteSpace($prerelease)
-) -Evidence 'The manifest resolves to stable PowerShell Gallery version 1.0.0.'
+) -Evidence 'The manifest resolves to a stable-format PowerShell Gallery version. This check does not publish it.'
 
 Add-AtlasGalleryCheck -Name 'PowerShell edition' -Passed (
     @($manifest.CompatiblePSEditions).Count -eq 1 -and
@@ -114,8 +114,8 @@ Add-AtlasGalleryCheck -Name 'Gallery icon' -Passed (
 
 Add-AtlasGalleryCheck -Name 'Release notes metadata' -Passed (
     -not [string]::IsNullOrWhiteSpace($psData.ReleaseNotes) -and
-    $psData.ReleaseNotes -match 'v1\.0\.0'
-) -Evidence 'The package metadata links to the matching stable GitHub release.'
+    $psData.ReleaseNotes.Contains("https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/RELEASE-NOTES-v$($manifest.ModuleVersion).md")
+) -Evidence 'The package metadata links to release notes matching the module version.'
 
 if ($SkipPackage) {
     return [pscustomobject] @{
@@ -311,6 +311,9 @@ try {
         'Connect-IdentityAtlas'
         'Export-IdentityAtlas'
         'Invoke-IdentityAtlas'
+        'Open-IdentityAtlasReport'
+        'Stop-IdentityAtlasReport'
+        'Test-IdentityAtlasConnection'
     )
     $commandDifference = @(Compare-Object -ReferenceObject $expectedCommands -DifferenceObject $importedCommands)
 
@@ -320,7 +323,7 @@ try {
 
     Add-AtlasGalleryCheck -Name 'Clean package import' -Passed (
         $commandDifference.Count -eq 0
-    ) -Evidence 'A clean PowerShell process imported the package and found all four approved public commands.'
+    ) -Evidence 'A clean PowerShell process imported the package and found all approved public commands.'
 }
 finally {
     if ([System.IO.Directory]::Exists($extractRoot)) {

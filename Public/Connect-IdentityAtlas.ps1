@@ -8,6 +8,8 @@ function Connect-IdentityAtlas {
 
         [switch] $UseDeviceCode,
 
+        [switch] $IncludeConsent,
+
         [ValidateSet('Process', 'CurrentUser')]
         [string] $ContextScope = 'Process',
 
@@ -27,6 +29,7 @@ function Connect-IdentityAtlas {
 
     if (-not $PSBoundParameters.ContainsKey('Scopes')) {
         $Scopes = Get-AtlasRecommendedScope -CollectionProfile $CollectionProfile
+        if ($IncludeConsent) { $Scopes = @($Scopes) + 'Directory.Read.All' | Sort-Object -Unique }
     }
 
     $parameters = @{
@@ -51,7 +54,7 @@ function Connect-IdentityAtlas {
     if (-not $context -or -not $context.TenantId) {
         throw 'Microsoft Graph authentication completed without returning a tenant context.'
     }
-    $permissionAssessment = Get-AtlasPermissionAssessment -ContextScope @($context.Scopes) -CollectionProfile $CollectionProfile
+    $permissionAssessment = Get-AtlasPermissionAssessment -ContextScope @($context.Scopes) -CollectionProfile $CollectionProfile -IncludeConsent:$IncludeConsent
     $missingScope = Get-AtlasMissingRecommendedScope -MissingRequirement $permissionAssessment.missingRequirements
     if ($permissionAssessment.status -eq 'partial') {
         Write-Warning "The authenticated context is missing recommended delegated read scopes: $($missingScope -join ', '). Identity Atlas will mark affected collection as partial."
@@ -75,6 +78,8 @@ function Connect-IdentityAtlas {
         Scopes = @($context.Scopes)
         CollectionProfile = $CollectionProfile
         PermissionStatus = $permissionAssessment.status
+        IncludeConsent = [bool] $IncludeConsent
+        EndpointAccess = $permissionAssessment.endpointAccess
         MissingScopes = $missingScope
         AdditionalWriteScopes = $additionalWriteScope
     }

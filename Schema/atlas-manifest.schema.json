@@ -17,6 +17,7 @@
     "capabilities"
   ],
   "properties": {
+    "resumedCollectors": { "type": "array", "items": { "type": "string" } },
     "schemaVersion": {
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+$"

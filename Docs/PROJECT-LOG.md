@@ -1,10 +1,16 @@
 # Identity Atlas project log and roadmap
 
-Date: 5 August 2026
+Date: 9 September 2026
 
 Owner: Mark Oldham
 
-Implementation status: v1.0.0 stable release hardening and final validation in progress
+Implementation status: v1.0.0 published. Unpublished v1.1.0 development work is tracked in [IMPROVEMENT-PLAN.md](IMPROVEMENT-PLAN.md).
+
+This file retains historical implementation and release records. Older feature gaps and estimates below describe their recorded versions, not the current roadmap. Use IMPROVEMENT-PLAN.md for current work and validation limits.
+
+The 9 September collection usability follow-up adds per-user authentication coverage, retained progress messages, completion and recovery guidance, and optional consent preflight checks. See IMPROVEMENT-PLAN.md for regression coverage and outstanding live validation. These changes are local and unpublished.
+
+Fresh Core, Governance and consent checks and interactive cancellation and resume are recorded in LIVE-VALIDATION-2026-09-09.md. The real Ctrl+C test found and verified a fix for missing interruption summaries. The final automated suite passes 88 PowerShell and 22 JavaScript tests.
 
 ## v1.0.0 stable release progress
 
@@ -16,7 +22,7 @@ Implementation status: v1.0.0 stable release hardening and final validation in p
 6. Promoted module and report metadata to stable version 1.0.0.
 7. Pinned CI analysis dependencies and added GitHub Actions dependency monitoring.
 8. Updated stable installation, security, release and dedicated application guidance.
-9. Final build, public package gates and publication remain in progress.
+9. Final build, public package gates and publication completed on 5 August 2026. See the Stable 1.0.0 release record below.
 
 ## v0.16.0 implementation progress
 

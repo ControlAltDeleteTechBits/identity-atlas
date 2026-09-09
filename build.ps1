@@ -31,7 +31,12 @@ if (-not $SkipTests) {
         Select-Object -First 1
     if ($scriptAnalyzer) {
         Import-Module $scriptAnalyzer.Path -Force
-        $analysisFindings = @(Invoke-ScriptAnalyzer -Path $projectRoot -Recurse -Severity Error, Warning)
+        # Analyse source, not private reports, temporary diagnostics or extracted packages.
+        $analysisFiles = @(Get-ChildItem -LiteralPath $projectRoot -File | Where-Object Extension -in @('.ps1', '.psm1'))
+        foreach ($folder in @('Private', 'Public', 'Tests', 'tools')) {
+            $analysisFiles += @(Get-ChildItem -LiteralPath (Join-Path $projectRoot $folder) -File -Recurse | Where-Object Extension -in @('.ps1', '.psm1'))
+        }
+        $analysisFindings = @($analysisFiles | ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName -Severity Error, Warning })
         if ($analysisFindings.Count -gt 0) {
             $analysisFindings | Format-Table RuleName, Severity, ScriptName, Line, Message -Wrap
             throw "$($analysisFindings.Count) PSScriptAnalyzer finding or findings must be resolved."
@@ -98,5 +103,5 @@ if (-not $SkipTests) {
     ProjectRoot = $projectRoot
     ModuleVersion = $moduleManifest.Version.ToString()
     PowerShellTests = if ($pesterResult) { $pesterResult.PassedCount } else { 'Skipped' }
-    JavaScriptTests = if ($SkipTests) { 'Skipped' } else { 14 }
+    JavaScriptTests = if ($SkipTests) { 'Skipped' } else { 'Passed (see test runner totals)' }
 }

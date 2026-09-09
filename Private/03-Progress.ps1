@@ -39,6 +39,8 @@ function Initialize-AtlasProgress {
         CurrentItem = 0
         TotalItems = 0
         ItemStatus = ''
+        CollectorFailedRequests = 0
+        LastInformationMilliseconds = 0
         RequestCount = 0
         RetryCount = 0
         NodeCount = 0
@@ -79,10 +81,11 @@ function Get-AtlasProgressStatus {
         ''
     }
     $detailText = if ($context.ItemStatus) { " | $($context.ItemStatus)" } else { '' }
+    $failureText = if ($context.CollectorFailedRequests -gt 0) { " | Failed requests $($context.CollectorFailedRequests)" } else { '' }
 
     return (
         "$elapsed | Requests $($context.RequestCount) | Objects $($context.NodeCount)" +
-        " | Relationships $($context.EdgeCount) | Evidence $($context.EvidenceCount)$itemText$detailText"
+        " | Relationships $($context.EdgeCount) | Evidence $($context.EvidenceCount)$itemText$detailText$failureText"
     )
 }
 
@@ -146,6 +149,8 @@ function Start-AtlasProgressStep {
     $context.CurrentItem = 0
     $context.TotalItems = 0
     $context.ItemStatus = 'Starting'
+    $context.CollectorFailedRequests = 0
+    $context.LastInformationMilliseconds = $context.Stopwatch.ElapsedMilliseconds
     Write-AtlasProgressView
     Write-Information (
         "[$Step/$($context.StepCount)] $DisplayName started | $(Get-AtlasProgressStatus)"
@@ -180,6 +185,18 @@ function Update-AtlasProgressRequest {
         $context.ItemStatus = $Status
     }
     Write-AtlasProgressView
+    Write-AtlasProgressHeartbeat
+}
+
+function Write-AtlasProgressHeartbeat {
+    [CmdletBinding()]
+    param([switch] $Force)
+    $context = $script:IdentityAtlasProgressContext
+    if (-not $context) { return }
+    if ($Force -or $context.Stopwatch.ElapsedMilliseconds - $context.LastInformationMilliseconds -ge 5000) {
+        Write-Information "[$($context.Step)/$($context.StepCount)] $($context.CollectorDisplayName) | $(Get-AtlasProgressStatus)" -InformationAction Continue
+        $context.LastInformationMilliseconds = $context.Stopwatch.ElapsedMilliseconds
+    }
 }
 
 function Update-AtlasProgressItem {
@@ -198,7 +215,10 @@ function Update-AtlasProgressItem {
         [ValidateRange(0, [int]::MaxValue)]
         [int] $TotalItems,
 
-        [string] $Status
+        [string] $Status,
+
+        [ValidateRange(0, [int]::MaxValue)]
+        [int] $FailedRequestCount = 0
     )
 
     $context = $script:IdentityAtlasProgressContext
@@ -206,12 +226,15 @@ function Update-AtlasProgressItem {
         return
     }
 
+    $changed = $context.CurrentItem -ne $CurrentItem -or $context.TotalItems -ne $TotalItems
     $context.CurrentItem = $CurrentItem
     $context.TotalItems = $TotalItems
+    $context.CollectorFailedRequests = $FailedRequestCount
     if ($Status) {
         $context.ItemStatus = $Status
     }
     Write-AtlasProgressView
+    Write-AtlasProgressHeartbeat -Force:($changed -and $TotalItems -gt 0 -and $CurrentItem -eq $TotalItems)
 }
 
 function Complete-AtlasProgressStep {

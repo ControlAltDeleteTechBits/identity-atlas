@@ -30,6 +30,7 @@ function Get-AtlasDeviceAndAuthentication {
         $deviceResponse = Invoke-AtlasGraphRequest -Uri $devicesEndpoint
     }
     catch {
+        if ($_.Exception -is [System.OperationCanceledException] -or $_.Exception -is [System.Management.Automation.PipelineStoppedException]) { throw }
         $result.Status = 'partial'
         $result.Warnings.Add("Devices could not be collected: $(Get-AtlasSafeErrorDetail -ErrorRecord $_)")
         $deviceResponse = [pscustomobject] @{
@@ -87,6 +88,7 @@ function Get-AtlasDeviceAndAuthentication {
             $deviceResponse.Metrics.retryCount += $ownersResponse.Metrics.retryCount
         }
         catch {
+            if ($_.Exception -is [System.OperationCanceledException] -or $_.Exception -is [System.Management.Automation.PipelineStoppedException]) { throw }
             $result.Status = 'partial'
             $result.Warnings.Add("Registered owners could not be collected for device '$displayName': $(Get-AtlasSafeErrorDetail -ErrorRecord $_)")
             Update-AtlasProgressItem `
@@ -146,7 +148,16 @@ function Get-AtlasDeviceAndAuthentication {
 
     $authMethodCount = 0
     $authenticationLogicalRequestCount = 0
-    $userNode = @($KnownNode | Where-Object { $_.Kind -in @('user', 'guestUser') })
+    $userNode = @($KnownNode | Where-Object { $_.Kind -in @('user', 'guestUser') } | Sort-Object Key -Unique)
+    # Store coverage in collector metrics so checkpoints preserve it without
+    # mutating users already saved by the earlier users collector.
+    $authenticationByUser = @{}
+    foreach ($node in $userNode) {
+        $authenticationByUser[$node.Key] = @{
+            status = if ($SkipAuthenticationMethods) { 'skipped' } else { 'notCollected' }
+            methodCount = 0
+        }
+    }
     if ($SkipAuthenticationMethods) {
         $result.Status = 'partial'
         $result.Warnings.Add('Authentication method collection was skipped by request.')
@@ -179,8 +190,12 @@ function Get-AtlasDeviceAndAuthentication {
         foreach ($methodsResponse in $methodsBatch.Responses) {
             $processedUserCount++
             $node = $nodeByBatchId[$methodsResponse.Id]
+            $userCoverage = $authenticationByUser[$node.Key]
+            $userCoverage.statusCode = [int] $methodsResponse.StatusCode
+            $userCoverage.observedAtUtc = [datetime]::UtcNow.ToString('o')
             $methodsEndpoint = "/v1.0/users/$($node.Id)/authentication/methods"
             if ($methodsResponse.StatusCode -lt 200 -or $methodsResponse.StatusCode -ge 300) {
+                $userCoverage.status = if ($methodsResponse.StatusCode -eq 403) { 'accessDenied' } else { 'failed' }
                 $result.Status = 'partial'
                 $result.Warnings.Add(
                     "Authentication methods could not be collected for user '$($node.DisplayName)': $($methodsResponse.ErrorMessage)"
@@ -192,9 +207,13 @@ function Get-AtlasDeviceAndAuthentication {
                 continue
             }
 
+            $userCoverage.status = if (@($methodsResponse.Items).Count -eq 0) { 'empty' } else { 'complete' }
             foreach ($method in $methodsResponse.Items) {
                 $methodId = Get-AtlasResponseProperty -InputObject $method -Name 'id'
                 if (-not $methodId) {
+                    $userCoverage.status = 'partial'
+                    $result.Status = 'partial'
+                    $result.Warnings.Add("An authentication method returned without an ID for user '$($node.DisplayName)'; authentication coverage is incomplete.")
                     continue
                 }
                 $odataType = Get-AtlasResponseProperty -InputObject $method -Name '@odata.type'
@@ -212,6 +231,7 @@ function Get-AtlasDeviceAndAuthentication {
                 }
                 $result.Nodes.Add($methodNode)
                 $authMethodCount++
+                $userCoverage.methodCount++
 
                 $evidence = New-AtlasEvidence -TenantId $TenantId -Collector 'authenticationMethods' -Endpoint $methodsEndpoint -SourceObjectId "$($node.Id)|authenticationMethod|$methodId" -Fields @{
                     userId = $node.Id
@@ -234,9 +254,15 @@ function Get-AtlasDeviceAndAuthentication {
         }
     }
 
+    $uncollected = @($authenticationByUser.Values | Where-Object status -eq 'notCollected').Count
+    if ($uncollected -gt 0) {
+        $result.Status = 'partial'
+        $result.Warnings.Add("Authentication method responses were not collected for $uncollected user(s). Their authentication status is unknown.")
+    }
     $result.Metrics = @{
         deviceCount = $deviceResponse.Items.Count
         authenticationMethodCount = $authMethodCount
+        authenticationByUser = $authenticationByUser
         authenticationLogicalRequestCount = $authenticationLogicalRequestCount
         deviceOwnersSkipped = [bool] $SkipDeviceOwners
         authenticationMethodsSkipped = [bool] $SkipAuthenticationMethods

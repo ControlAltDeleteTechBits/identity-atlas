@@ -1699,3 +1699,8 @@ strong {
     transition: none !important;
   }
 }
+
+.evidence-export-dialog { max-width: min(900px, 90vw); max-height: 85vh; border: 1px solid #c8d6df; border-radius: 8px; padding: 24px; color: #102033; }
+.evidence-export-dialog::backdrop { background: rgb(10 25 40 / 55%); }
+.evidence-export-dialog pre, .timeline-list pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 45vh; overflow: auto; }
+.evidence-export-dialog button { margin: 8px; padding: 10px; }

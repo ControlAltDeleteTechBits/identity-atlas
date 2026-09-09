@@ -1,5 +1,7 @@
 # Contributing to Identity Atlas
 
+Community authorship is preserved. The release history gate checks attribution policy rather than requiring every author to be Mark Oldham. Git author text alone does not establish identity or approval. Protected pull request review, signed main commits and maintainer release approval remain required. Control Alt Delete Tech Bits remains the publisher.
+
 Identity Atlas welcomes useful, evidence-led contributions from Microsoft Entra administrators, PowerShell developers, security practitioners, technical writers and accessibility reviewers.
 
 Control Alt Delete Tech Bits maintains the project. Mark Oldham has final responsibility for the project direction, security boundary, releases and decisions about whether a contribution is merged.
