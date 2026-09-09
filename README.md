@@ -116,6 +116,25 @@ Setup guidance: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/
 
 During collection, PowerShell shows the active collector, elapsed time, Graph request and retry totals, collected object, relationship and evidence counts, and current item progress. `-OpenReport` starts a loopback-only server, selects port 8766 or the next available permitted port, then opens the interactive report in the default browser. The result object includes `ReportUrl` and `ServerProcessId` so the session can be checked or stopped later.
 
+The 1.1.0 development candidate also retains a terminal progress message at most every five seconds when requests or items advance, plus the final item update. This is activity reporting, not a heartbeat during a blocked HTTP request. PIM for Groups shows checked groups and failed requests. Progress object totals are collector contributions; the saved report summary gives deduplicated totals.
+
+On completion, read the complete and incomplete collector lists, next actions and `ReopenCommand`, even if you assigned the result to a variable. For example, `$result.ReopenCommand` shows the exact command for that report. If automatic browser opening fails, the report remains saved and can be opened with `Open-IdentityAtlasReport -Path '<report folder>'`.
+
+For optional consent collection, use matching options throughout:
+
+```powershell
+Connect-IdentityAtlas -UseDeviceCode -CollectionProfile Governance -IncludeConsent
+Test-IdentityAtlasConnection -CollectionProfile Governance -IncludeConsent
+$reportFolder = Join-Path $env:USERPROFILE "Documents/IdentityAtlas-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+$result = Invoke-IdentityAtlas -OutputPath $reportFolder -CollectionProfile Governance -IncludeConsent -Checkpoint -OpenReport
+```
+
+`IncludeConsent` adds a read permission check for delegated consent collection. `PermissionStatus = complete` means the local scope requirements are satisfied, not that every Graph endpoint is authorised. Administrator roles, licensing and resource restrictions can still prevent collection.
+
+Authentication collection status appears in each user's Details. A successful empty response is different from access denied, failure, skipped collection or unknown coverage. Unknown cases are excluded from negative authentication findings. Older reports without per-user coverage are treated conservatively as unknown; collect a new report to obtain this status. Registered methods do not prove that MFA is enforced.
+
+To resume an interrupted checkpointed collection, run the original command with `-Resume`, the same explicit output folder and the same collection options. Use the same module, tenant, account and scopes within 24 hours. Only completed collectors are reused; interrupted or partial collectors and subsequent stages are refreshed. Reused evidence retains its timestamps and the report is labelled partial. Report and checkpoint folders contain sensitive tenant data and must not be published.
+
 The slower per-object collectors use Microsoft Graph JSON batches of ten GET requests by default. Set a smaller limit when required:
 
 ```powershell
@@ -216,7 +235,7 @@ User > application app role
 User > direct group > application app role
 User > Conditional Access policy inclusion
 User > direct group > Conditional Access policy inclusion
-User > nested group chain > application app role or Conditional Access policy inclusion
+User > nested group chain > Conditional Access policy scope
 User > eligible directory role
 User > registered device
 User > authentication method
@@ -258,7 +277,11 @@ Export-IdentityAtlas -InputObject $report -OutputPath .\Output\Exports -Format M
 Export-IdentityAtlas -InputObject $report -OutputPath .\Output\Exports -Format Csv
 ```
 
-The access worker traverses supported nested group chains up to eight relationships while preventing loops. Microsoft Entra role-assignable groups remain direct-only because role-assignable group nesting is not supported by the platform.
+The access worker traverses supported nested group chains up to eight relationships while preventing loops. Application and directory role assignments do not inherit through nested groups. PIM ownership is context, not membership. Eligible routes require activation. Collected evidence does not prove a successful sign-in or effective authorisation.
+
+## Development candidate
+
+The local 1.1.0 candidate is not yet published. The Gallery commands above still install the published release. See [the improvement plan](Docs/IMPROVEMENT-PLAN.md) for current changes, examples and validation limits.
 
 ## Contributing
 

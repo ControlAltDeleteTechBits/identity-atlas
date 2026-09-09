@@ -26,6 +26,22 @@ function Compare-IdentityAtlas {
     $reference = Read-AtlasReportJson -Path $ReferenceReportPath
     $difference = Read-AtlasReportJson -Path $DifferenceReportPath
 
+    if (-not $reference.manifest.tenant.id -or $reference.manifest.tenant.id -ne $difference.manifest.tenant.id) {
+        throw 'Reports must identify the same tenant. Cross-tenant comparison is not supported.'
+    }
+    if ($reference.manifest.schemaVersion -ne $difference.manifest.schemaVersion) {
+        throw 'Report schemas differ. Re-export both reports with compatible schemas before comparing.'
+    }
+    $coverageWarnings = [System.Collections.Generic.List[string]]::new()
+    $removalsVerified = $difference.manifest.coverage.status -eq 'complete' -and $reference.manifest.coverage.status -eq 'complete'
+    $referenceCollectors = @($reference.manifest.coverage.collectors | ForEach-Object { $_.name } | Sort-Object)
+    $differenceCollectors = @($difference.manifest.coverage.collectors | ForEach-Object { $_.name } | Sort-Object)
+    if (($referenceCollectors -join '|') -ne ($differenceCollectors -join '|')) { $removalsVerified = $false }
+    if (@($reference.manifest.coverage.collectors + $difference.manifest.coverage.collectors | Where-Object { $_.status -ne 'complete' }).Count) { $removalsVerified = $false }
+    if (-not $removalsVerified) {
+        $coverageWarnings.Add('Coverage differs or is incomplete. Missing records are not observed in the later report, not confirmed removals. Added records may have existed outside earlier coverage.')
+    }
+
     $referenceNodes = @{}
     $differenceNodes = @{}
     $referenceEdges = @{}
@@ -56,6 +72,8 @@ function Compare-IdentityAtlas {
         [pscustomobject] @{
             key = $Edge.Key
             relationship = $Edge.Relationship
+            fromKey = $Edge.From
+            toKey = $Edge.To
             from = if ($from) { $from.DisplayName } else { $Edge.From }
             fromKind = if ($from) { $from.Kind } else { 'unresolved' }
             to = if ($to) { $to.DisplayName } else { $Edge.To }
@@ -108,6 +126,14 @@ function Compare-IdentityAtlas {
     $removedEdges = @($referenceEdges.Keys | Where-Object { -not $differenceEdges.ContainsKey($_) } | ForEach-Object {
         Convert-AtlasEdgeSummary -Edge $referenceEdges[$_] -NodeLookup $referenceNodes
     })
+    $unobservedNodes = @()
+    $unobservedEdges = @()
+    if (-not $removalsVerified) {
+        $unobservedNodes = $removedNodes
+        $unobservedEdges = $removedEdges
+        $removedNodes = @()
+        $removedEdges = @()
+    }
     $changedNodes = @($differenceNodes.Keys | Where-Object {
         $referenceNodes.ContainsKey($_) -and
         (ConvertTo-AtlasStableJson -InputObject (ConvertTo-AtlasStableNode -Node $referenceNodes[$_])) -ne
@@ -134,6 +160,12 @@ function Compare-IdentityAtlas {
     })
 
     $comparison = [pscustomobject] @{
+        tenantId = $reference.manifest.tenant.id
+        schemaVersion = $reference.manifest.schemaVersion
+        coverageWarnings = @($coverageWarnings)
+        removalsVerified = $removalsVerified
+        unobservedNodes = $unobservedNodes
+        unobservedEdges = $unobservedEdges
         generatedAtUtc = ([datetime]::UtcNow.ToString('o'))
         reference = [pscustomobject] @{
             tenant = $reference.manifest.tenant.displayName
@@ -152,6 +184,8 @@ function Compare-IdentityAtlas {
             addedEdges = $addedEdges.Count
             removedEdges = $removedEdges.Count
             changedEdges = $changedEdges.Count
+            unobservedNodes = $unobservedNodes.Count
+            unobservedEdges = $unobservedEdges.Count
         }
         addedNodes = $addedNodes
         removedNodes = $removedNodes
@@ -176,6 +210,9 @@ function Compare-IdentityAtlas {
         $lines.Add('')
         $lines.Add('## Summary')
         $lines.Add('')
+        foreach ($warning in $coverageWarnings) { $lines.Add($warning) }
+        $lines.Add("Not observed objects: $($unobservedNodes.Count)")
+        $lines.Add("Not observed relationships: $($unobservedEdges.Count)")
         $lines.Add("Added objects: $($comparison.summary.addedNodes)")
         $lines.Add("Removed objects: $($comparison.summary.removedNodes)")
         $lines.Add("Changed objects: $($comparison.summary.changedNodes)")
@@ -228,7 +265,7 @@ function Compare-IdentityAtlas {
     return element;
   };
   document.getElementById('comparison-range').textContent =
-    comparison.reference.tenant + ' compared with ' + comparison.difference.tenant;
+    comparison.reference.tenant + ' compared with ' + comparison.difference.tenant + '. ' + (comparison.coverageWarnings || []).join(' ');
   const cards = document.getElementById('summary-cards');
   for (const [label, value, className] of [
     ['Added objects', comparison.summary.addedNodes, 'added'],
@@ -236,7 +273,9 @@ function Compare-IdentityAtlas {
     ['Changed objects', comparison.summary.changedNodes, 'changed'],
     ['Added relationships', comparison.summary.addedEdges, 'added'],
     ['Removed relationships', comparison.summary.removedEdges, 'removed'],
-    ['Changed relationships', comparison.summary.changedEdges, 'changed']
+    ['Changed relationships', comparison.summary.changedEdges, 'changed'],
+    ['Objects not observed', comparison.summary.unobservedNodes, 'changed'],
+    ['Relationships not observed', comparison.summary.unobservedEdges, 'changed']
   ]) {
     const card = make('div', 'card');
     card.append(make('span', 'label', label), make('span', 'value ' + className, String(value)));
@@ -275,6 +314,8 @@ function Compare-IdentityAtlas {
   renderEdges('added-edges', comparison.addedEdges, 'added');
   renderEdges('removed-edges', comparison.removedEdges, 'removed');
   renderEdges('changed-edges', comparison.changedEdges, 'changed');
+  renderNodes('unobserved-nodes', comparison.unobservedNodes, 'changed');
+  renderEdges('unobserved-edges', comparison.unobservedEdges, 'changed');
 }());
 '@
         Write-AtlasTextFile -Path $comparisonAppPath -Content $comparisonApplication
@@ -320,6 +361,8 @@ function Compare-IdentityAtlas {
   </header>
   <main>
     <div class="cards" id="summary-cards"></div>
+    <section><h2>Objects not observed</h2><div id="unobserved-nodes"></div></section>
+    <section><h2>Relationships not observed</h2><div id="unobserved-edges"></div></section>
     <section><h2 class="added">Added objects</h2><div id="added-nodes"></div></section>
     <section><h2 class="removed">Removed objects</h2><div id="removed-nodes"></div></section>
     <section><h2 class="changed">Changed objects</h2><div id="changed-nodes"></div></section>

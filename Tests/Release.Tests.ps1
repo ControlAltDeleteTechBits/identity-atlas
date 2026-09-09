@@ -9,13 +9,13 @@ Describe 'Identity Atlas stable release controls' {
         $manifest.Author | Should -Be 'Mark Oldham'
         $manifest.CompanyName | Should -Be 'Control Alt Delete Tech Bits'
         $manifest.Copyright | Should -Match 'Control Alt Delete Tech Bits'
-        $manifest.ModuleVersion | Should -Be '1.0.0'
+        $manifest.ModuleVersion | Should -Be '1.1.0'
         $manifest.PrivateData.PSData.ContainsKey('Prerelease') | Should -Be $false
         $manifest.CompatiblePSEditions | Should -Be @('Core')
         $manifest.PrivateData.PSData.ProjectUri | Should -Be 'https://github.com/ControlAltDeleteTechBits/identity-atlas'
         $manifest.PrivateData.PSData.LicenseUri | Should -Be 'https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/LICENSE'
         $manifest.PrivateData.PSData.IconUri | Should -Match 'identity-atlas-gallery-icon\.svg$'
-        $manifest.PrivateData.PSData.ReleaseNotes | Should -Match 'v1\.0\.0'
+        $manifest.PrivateData.PSData.ReleaseNotes | Should -Match ([regex]::Escape("Docs/RELEASE-NOTES-v$($manifest.ModuleVersion).md"))
 
         $graphDependency = @(
             $manifest.RequiredModules |

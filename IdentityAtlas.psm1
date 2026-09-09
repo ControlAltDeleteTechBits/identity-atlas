@@ -18,4 +18,7 @@ Export-ModuleMember -Function @(
     'Invoke-IdentityAtlas'
     'Export-IdentityAtlas'
     'Compare-IdentityAtlas'
+    'Open-IdentityAtlasReport'
+    'Stop-IdentityAtlasReport'
+    'Test-IdentityAtlasConnection'
 )

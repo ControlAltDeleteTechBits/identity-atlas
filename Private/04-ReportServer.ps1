@@ -102,6 +102,10 @@ function Start-AtlasReportServer {
     }
 
     Write-Information "Identity Atlas report ready at $reportUrl" -InformationAction Continue
+    if (-not (Get-Variable AtlasReportServers -Scope Script -ErrorAction SilentlyContinue)) {
+        $script:AtlasReportServers = @{}
+    }
+    $script:AtlasReportServers[$serverProcess.Id] = $serverProcess.StartTime.ToUniversalTime().Ticks
     if ($OpenBrowser) {
         Start-Process -FilePath $reportUrl
     }

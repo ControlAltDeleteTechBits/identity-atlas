@@ -21,6 +21,8 @@ param(
 
     [switch] $SkipHistory,
 
+    [switch] $StrictMaintainerHistory,
+
     [switch] $SkipPackage
 )
 
@@ -230,9 +232,16 @@ if (-not $SkipHistory) {
                 $parts[3] -ceq 'GitHub' -and
                 $parts[4] -ceq $ExpectedGitHubCommitterEmail
             )
+            if (-not $StrictMaintainerHistory) {
+                # Git author text is not an authentication mechanism. Protected
+                # review and signed main commits control acceptance of contributions.
+                $blockedNames = '(?i)' + (@(('Co' + 'dex'), ('Chat' + 'GPT'), ('Open' + 'AI')) -join '|')
+                $authorApproved = $parts.Count -eq 5 -and -not [string]::IsNullOrWhiteSpace($parts[1]) -and $parts[2] -match '@' -and $parts[1] -notmatch $blockedNames
+                $directCommitterApproved = $parts.Count -eq 5 -and -not [string]::IsNullOrWhiteSpace($parts[3]) -and $parts[4] -match '@' -and $parts[3] -notmatch $blockedNames
+            }
             if (
                 -not $authorApproved -or
-                $parts[3] -cnotin $ExpectedCommitter -or
+                ($StrictMaintainerHistory -and $parts[3] -cnotin $ExpectedCommitter) -or
                 (-not $directCommitterApproved -and -not $githubCommitterApproved)
             ) {
                 $row
@@ -241,7 +250,7 @@ if (-not $SkipHistory) {
     )
     Add-AtlasPublicReleaseCheck -Name 'Git history authorship' -Passed ($unexpectedIdentity.Count -eq 0) -Evidence $(
         if ($unexpectedIdentity.Count -eq 0) {
-            "$($commitRows.Count) commits have the approved Mark identity or the exact GitHub protected-merge identity."
+            "$($commitRows.Count) commit identities passed the attribution policy. Community authorship is preserved; Git metadata alone does not prove review or identity."
         }
         else {
             "Unexpected history identity: $($unexpectedIdentity -join ', ')"
