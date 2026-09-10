@@ -105,7 +105,7 @@ function Invoke-IdentityAtlas {
             $checkpointIdentity = [ordered]@{
                 tenant = $context.TenantId; account = $context.Account; client = $context.ClientId
                 scopes = @($context.Scopes | Sort-Object); profile = $CollectionProfile
-                skipped = @($skippedCollector | Sort-Object); batchSize = $BatchSize; consent = [bool]$IncludeConsent; version = '1.1.0-development'
+                skipped = @($skippedCollector | Sort-Object); batchSize = $BatchSize; consent = [bool]$IncludeConsent; version = '2.0.0'
                 implementation = Get-AtlasStableId -InputString ($implementationHashes -join '|')
             }
             Initialize-AtlasCheckpoint -Path "$OutputPath.checkpoint" -Identity $checkpointIdentity -Resume:$Resume

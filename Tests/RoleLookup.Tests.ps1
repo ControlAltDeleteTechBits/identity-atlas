@@ -12,7 +12,8 @@ Describe 'Referenced role definition fallback' {
             Mock Invoke-AtlasGraphRequest {
                 param($Uri)
                 $items = @()
-                if ($Uri -like '*roleDefinitions[?]*') { $items = @() }
+                if ($Uri -like '*roleAssignmentScheduleInstances*' -or $Uri -like '*roleManagementPolicyAssignments*') { $items = @() }
+                elseif ($Uri -like '*roleDefinitions[?]*') { $items = @() }
                 elseif ($Uri -like '*roleDefinitions/*') {
                     if ($Mode -eq 'denied') { throw 'HTTP 403 Forbidden' }
                     if ($Mode -ne 'empty') {
@@ -31,7 +32,8 @@ Describe 'Referenced role definition fallback' {
             $result.Nodes.Count | Should -Be 1
             $result.Nodes[0].Id | Should -Be 'missing-role'
             $result.Metrics.directRoleLookupCount | Should -Be 1
-            $result.Metrics.requestCount | Should -Be 4
+            $result.Metrics.requestCount | Should -Be 6
+            Should -Invoke Invoke-AtlasGraphRequest -Times 1 -Exactly -ParameterFilter { $Uri -eq '/v1.0/roleManagement/directory/roleAssignments' }
             Should -Invoke Invoke-AtlasGraphRequest -Times 1 -Exactly -ParameterFilter { $Uri -eq '/v1.0/roleManagement/directory/roleDefinitions/missing-role' }
             if ($Mode -eq 'successful') {
                 $result.Status | Should -Be complete

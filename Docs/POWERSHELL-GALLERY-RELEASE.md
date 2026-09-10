@@ -1,5 +1,11 @@
 # Identity Atlas PowerShell Gallery release procedure
 
+## Stable V2 publication target, 10 September 2026
+
+Publish Gallery version `2.0.0`, matching GitHub tag `v2.0.0`, only after tests and package safety checks pass. Do not set a prerelease label. Build the Gallery package from the exact verified GitHub release ZIP. Use a short-lived API key restricted to publishing new versions of IdentityAtlas and revoke it after publication. Download the public package, compare its SHA256 with the tested package and repeat the isolated import check. The historical record below describes 1.0.0, not the current release state.
+
+## Historical 1.0.0 record
+
 Date: 5 August 2026
 
 Target Gallery version: `1.0.0`
@@ -8,7 +14,7 @@ Matching GitHub version: `v1.0.0`
 
 Publisher: Control Alt Delete Tech Bits
 
-## Current status
+## Status recorded for 1.0.0
 
 1. `IdentityAtlas` version `1.0.0` is the published stable release.
 2. The publisher is `ControlAltDeleteTechBits`.

@@ -248,6 +248,7 @@ function Invoke-AtlasCollector {
         return $cachedResult
     }
 
+    $collectorStartedAt = [datetime]::UtcNow.ToString('o')
     try {
         $result = & $Collector
         if ($null -eq $result) {
@@ -270,6 +271,8 @@ function Invoke-AtlasCollector {
             failed = $true
         }
     }
+    $result.Metrics.collectionStartedAtUtc = $collectorStartedAt
+    $result.Metrics.collectionCompletedAtUtc = [datetime]::UtcNow.ToString('o')
     Complete-AtlasProgressStep -Result $result
     Save-AtlasCheckpointResult -Name $Name -Result $result
     return $result

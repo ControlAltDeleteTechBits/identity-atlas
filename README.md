@@ -6,11 +6,11 @@ Publisher: Control Alt Delete Tech Bits
 
 Lead maintainer: Mark Oldham
 
-Current stable release: 1.0.0
+Stable release version: 2.0.0
 
-PowerShell Gallery version: 1.0.0
+PowerShell Gallery version: 2.0.0
 
-PowerShell Gallery: https://www.powershellgallery.com/packages/IdentityAtlas/1.0.0
+PowerShell Gallery: https://www.powershellgallery.com/packages/IdentityAtlas/2.0.0
 
 Identity Atlas is an independent community project. It is not a Microsoft product and is not affiliated with, endorsed by or sponsored by Microsoft.
 
@@ -21,6 +21,8 @@ Identity Atlas helps Microsoft Entra administrators understand how identity, app
 Generated reports contain sensitive administrative evidence. They are intended for an authorised administrator’s local device and must not be published.
 
 ## Stable release capabilities
+
+Local development note: see [Access verification development](Docs/ACCESS-VERIFICATION-PLAN.md) for the next phase's scope and outstanding live acceptance checks. This does not change the published release instructions below.
 
 1. Canonical node, edge, evidence and report-manifest contracts.
 2. PowerShell collectors for users, groups, direct group memberships, group owners, app registrations, service principals, application owners, credential summaries, required API permissions, app role assignments, devices, registered device owners, user authentication methods, Conditional Access policies, named locations, authentication strengths, directory role definitions, active role assignments and eligible role assignments.
@@ -75,9 +77,9 @@ Maintainer publication procedure: https://github.com/ControlAltDeleteTechBits/id
 
 ## Inspect or run from the GitHub source release
 
-Current release: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v1.0.0
+Current release: https://github.com/ControlAltDeleteTechBits/identity-atlas/releases/tag/v2.0.0
 
-The immutable GitHub `v1.0.0` release contains GitHub's automatic source archives. It does not contain the separately packaged module ZIP. Use PowerShell Gallery for the supported installation route above.
+Use the packaged module ZIP and matching SHA256 checksum attached to the GitHub release. Release notes explain the supported behaviour and remaining evidence limits.
 
 To inspect or run the repository source instead:
 
@@ -116,7 +118,7 @@ Setup guidance: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/
 
 During collection, PowerShell shows the active collector, elapsed time, Graph request and retry totals, collected object, relationship and evidence counts, and current item progress. `-OpenReport` starts a loopback-only server, selects port 8766 or the next available permitted port, then opens the interactive report in the default browser. The result object includes `ReportUrl` and `ServerProcessId` so the session can be checked or stopped later.
 
-The 1.1.0 development candidate also retains a terminal progress message at most every five seconds when requests or items advance, plus the final item update. This is activity reporting, not a heartbeat during a blocked HTTP request. PIM for Groups shows checked groups and failed requests. Progress object totals are collector contributions; the saved report summary gives deduplicated totals.
+Collection retains a terminal progress message at most every five seconds when requests or items advance, plus the final item update. This is activity reporting, not a heartbeat during a blocked HTTP request. PIM for Groups shows checked groups and failed requests. Progress object totals are collector contributions; the saved report summary gives deduplicated totals.
 
 On completion, read the complete and incomplete collector lists, next actions and `ReopenCommand`, even if you assigned the result to a variable. For example, `$result.ReopenCommand` shows the exact command for that report. If automatic browser opening fails, the report remains saved and can be opened with `Open-IdentityAtlasReport -Path '<report folder>'`.
 
@@ -279,11 +281,15 @@ Export-IdentityAtlas -InputObject $report -OutputPath .\Output\Exports -Format C
 
 The access worker traverses supported nested group chains up to eight relationships while preventing loops. Application and directory role assignments do not inherit through nested groups. PIM ownership is context, not membership. Eligible routes require activation. Collected evidence does not prove a successful sign-in or effective authorisation.
 
-## Development candidate
+## Version 2 administration workspace
 
-The local 1.1.0 candidate is not yet published. The Gallery commands above still install the published release. See [the improvement plan](Docs/IMPROVEMENT-PLAN.md) for current changes, examples and validation limits.
+Overview now opens the tenant administration home. Object directory provides tables, saved filters, column selection and filtered CSV exports. Select an object there to open its application, group housekeeping or candidate administration responsibility view. The original relationship explorer remains available.
+
+Saved views and business notes remain in this browser origin, scoped to the tenant. They are stored unencrypted and are not included in report exports. Do not store passwords or secrets in notes. Missing evidence is not a finding of no access, no owner or no administrator. Provisioning and activity are explicitly unknown when not collected. See [V2 release notes](https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/RELEASE-NOTES-v2.0.0.md) for scope and upgrade instructions.
 
 ## Contributing
+
+Administration workspace design and evidence limits are documented in [V2 admin workspace](https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/V2-ADMIN-WORKSPACE.md).
 
 Community contributions are welcome through GitHub issues and reviewed pull requests. Direct write access is not required.
 

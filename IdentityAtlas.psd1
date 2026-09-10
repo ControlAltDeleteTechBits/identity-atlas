@@ -1,6 +1,6 @@
 @{
     RootModule        = 'IdentityAtlas.psm1'
-    ModuleVersion     = '1.1.0'
+    ModuleVersion     = '2.0.0'
     GUID              = 'f0ce5f0e-34dc-4c59-9c12-3e35b581e955'
     Author            = 'Mark Oldham'
     CompanyName       = 'Control Alt Delete Tech Bits'
@@ -32,7 +32,7 @@
             LicenseUri   = 'https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/ControlAltDeleteTechBits/identity-atlas'
             IconUri      = 'https://raw.githubusercontent.com/ControlAltDeleteTechBits/identity-atlas/main/Web/assets/brand/identity-atlas-gallery-icon.svg'
-            ReleaseNotes = 'Version 1.1.0: corrected access semantics, per-user authentication coverage, safer comparisons, local report commands, checkpoint recovery and optional delegated consent. Release notes and validation limits: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/RELEASE-NOTES-v1.1.0.md'
+            ReleaseNotes = 'Version 2.0.0: tenant administration home, object directory, application administration, group housekeeping, candidate administration responsibility and access verification. Read-only collection; local report. Scope and validation limits: https://github.com/ControlAltDeleteTechBits/identity-atlas/blob/main/Docs/RELEASE-NOTES-v2.0.0.md'
         }
     }
 }

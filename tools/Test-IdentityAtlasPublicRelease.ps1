@@ -165,10 +165,7 @@ Add-AtlasPublicReleaseCheck -Name 'Microsoft Graph request methods' -Passed (
     $directRequestsAreReadOnly -and $batchRequestsAreReadOnly
 ) -Evidence 'Resource operations are GET requests. POST is restricted to the Microsoft Graph v1.0 JSON batch transport and every batch subrequest is GET.'
 
-$appJavaScript = Get-AtlasFileText -RelativePath 'Web\assets\app.js'
-$dataRuntimeJavaScript = Get-AtlasFileText -RelativePath 'Web\assets\data-runtime.js'
-$workerJavaScript = Get-AtlasFileText -RelativePath 'Web\assets\graph-worker-source.js'
-$browserJavaScript = @($appJavaScript, $dataRuntimeJavaScript, $workerJavaScript) -join [Environment]::NewLine
+$browserJavaScript = (Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Web/assets') -Filter '*.js' -File -Recurse | ForEach-Object { [IO.File]::ReadAllText($_.FullName) }) -join [Environment]::NewLine
 $unsafeBrowserPatterns = [ordered] @{
     'HTML string injection' = '(?i)\b(innerHTML|outerHTML|insertAdjacentHTML)\b'
     'Document stream writing' = '(?i)\bdocument\.write(?:ln)?\s*\('
