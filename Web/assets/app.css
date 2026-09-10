@@ -1704,3 +1704,49 @@ strong {
 .evidence-export-dialog::backdrop { background: rgb(10 25 40 / 55%); }
 .evidence-export-dialog pre, .timeline-list pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 45vh; overflow: auto; }
 .evidence-export-dialog button { margin: 8px; padding: 10px; }
+/* Access analysis keeps long identifiers within the inspector instead of widening the graph. */
+.analysis-value { min-width: 0; overflow-wrap: anywhere; }
+.analysis-value > .property-grid { margin-block: 12px; }
+.analysis-value .analysis-value > .property-grid { border-left: 2px solid #cbd5e1; padding-left: 10px; }
+.analysis-value pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.analysis-value details { margin-block: 8px; }
+.verification-status { padding: 12px; background: #fff7df; border-left: 3px solid #a87910; line-height: 1.5; }
+.verification-conclusion { padding-block: 12px; border-bottom: 1px solid #d9e2eb; overflow-wrap: anywhere; }
+.verification-conclusion h4 { margin-block: 6px; line-height: 1.5; }
+
+/* Admin workspace is full width; the existing explorer remains available. */
+.admin-workspace[hidden], .explorer-frame[hidden] { display: none !important; }
+.admin-workspace { padding: 24px; background: #fff; border: 1px solid #d6dfe9; border-radius: 8px; color: #102033; min-width: 0; }
+.admin-workspace h2 { margin-top: 0; }
+.admin-workspace h3 { margin-top: 24px; }
+.admin-workspace p { line-height: 1.55; overflow-wrap: anywhere; }
+.admin-muted { color: #49617a; font-size: 13px; }
+.admin-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-block: 16px; }
+.admin-workspace button, .admin-workspace select, .admin-workspace input:not([type=checkbox]), .admin-workspace textarea { font: inherit; padding: 10px 12px; border: 1px solid #bacbda; border-radius: 5px; background: white; color: #102033; max-width: 100%; }
+.admin-workspace button { cursor: pointer; margin: 3px; }
+.admin-workspace button:hover { background: #eaf6f7; border-color: #00838d; }
+.admin-workspace button:disabled { opacity: .5; cursor: default; }
+.admin-workspace :focus-visible { outline: 3px solid #00838d; outline-offset: 2px; }
+.admin-workspace label { display: flex; gap: 8px; flex-direction: column; font-size: 13px; }
+.admin-workspace fieldset { display: flex; flex-wrap: wrap; gap: 16px; border: 1px solid #d6dfe9; }
+.admin-workspace fieldset label { flex-direction: row; align-items: center; }
+.admin-workspace textarea { min-height: 100px; width: 100%; box-sizing: border-box; }
+.admin-workspace a { color: #006e78; margin: 8px; display: inline-block; }
+.admin-workspace details { margin-block: 14px; }
+.admin-workspace summary { cursor: pointer; padding: 8px 0; }
+.admin-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; }
+.admin-card { padding: 18px; border: 1px solid #d6dfe9; border-radius: 7px; background: #f8fafc; min-width: 0; }
+.admin-card h3, .admin-card h4 { margin-top: 0; }
+.admin-stats { display: flex; flex-wrap: wrap; gap: 14px; }
+.admin-stats p { padding: 16px; border-left: 3px solid #00838d; background: #eaf6f7; }
+.admin-data { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 360px; overflow: auto; font: 13px/1.6 monospace; padding: 12px; background: #f1f5f9; }
+.admin-properties { display: grid; grid-template-columns: minmax(100px, 180px) minmax(0, 1fr); gap: 10px 20px; padding: 12px; background: #f1f5f9; overflow-wrap: anywhere; }
+.admin-properties dt { color: #49617a; }
+.admin-properties dd { margin: 0; min-width: 0; }
+.admin-workspace li { padding-block: 5px; overflow-wrap: anywhere; }
+.admin-table-scroll { overflow: auto; max-width: 100%; }
+.admin-workspace table { border-collapse: collapse; width: 100%; min-width: 850px; text-align: left; }
+.admin-workspace th button { white-space: nowrap; }
+.admin-workspace th, .admin-workspace td { border-bottom: 1px solid #d6dfe9; padding: 10px; max-width: 300px; overflow-wrap: anywhere; }
+.admin-workspace th { background: #edf5f8; }
+@media (max-width: 700px) { .admin-workspace { padding: 12px; } .admin-toolbar { align-items: stretch; flex-direction: column; } }

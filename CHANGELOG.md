@@ -1,5 +1,17 @@
 # Identity Atlas changelog
 
+## 2.0.0
+
+1. Added the tenant administration home, paged object directory, saved views, custom columns, sorting, CSV exports and combined object relationship inspection.
+2. Added application administration, group housekeeping and candidate administration responsibility views with explicit scope and coverage limits.
+3. Collected manager metadata, SSO signing certificate metadata, federation metadata and directory role actions using existing read permissions.
+4. Added access removal and review outcome verification, PIM protection analysis, group dependency previews, supported dynamic rule explanation and application permission dossiers.
+5. Retained comparison baselines across object selections, corrected PNG/SVG connectors and icons, and labelled unsupported requested permission types unevaluated.
+6. Preserved local-only processing, added a security gate covering all browser scripts, and improved narrow-screen table scrolling and keyboard focus after selection/sorting.
+7. Changed the initial screen to administration home. Existing commands and schema 1.1.0 remain compatible; regenerate reports to obtain the new UI and metadata. Old checkpoints must not be reused across this version change.
+
+See Docs/RELEASE-NOTES-v2.0.0.md for validation boundaries, including deferred live Access Review acceptance and candidate rather than definitive administrative authority.
+
 ## 1.1.0
 
 1. Corrected nested application and directory role inheritance, separated PIM ownership and eligibility, and replaced percentage confidence with evidence labels.

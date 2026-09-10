@@ -263,11 +263,13 @@ function Get-AtlasAccessReview {
                 $result.Evidence.Add($evidence)
                 $result.Edges.Add(
                     (New-AtlasEdge -TenantId $TenantId -From $principalKey -To $instanceNode.Key -Relationship 'reviewedInAccessReview' -State @{
+                        decisionId = $decision.id
                         resourceId = $resourceId
                         decision = Get-AtlasResponseProperty -InputObject $decision -Name 'decision'
                         recommendation = Get-AtlasResponseProperty -InputObject $decision -Name 'recommendation'
                         reviewedDateTime = Get-AtlasResponseProperty -InputObject $decision -Name 'reviewedDateTime'
                         applyResult = Get-AtlasResponseProperty -InputObject $decision -Name 'applyResult'
+                        appliedDateTime = Get-AtlasResponseProperty -InputObject $decision -Name 'appliedDateTime'
                     } -EvidenceIds @($evidence.Key) -Source @{ collector = 'accessReviews' })
                 )
                 if ($resourceId -and $keyById.ContainsKey($resourceId)) {
