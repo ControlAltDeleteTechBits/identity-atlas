@@ -2,6 +2,11 @@
   'use strict';
 
   const report = window.IdentityAtlasData.snapshot();
+  let accessAnalysis = null;
+  let accessBaseline = null;
+  let baselineLoadSequence = 0;
+  // Path geometry from the bundled Tabler icons; no external resources in exports.
+  const exportIconPaths = {"assets/icons/user.svg":["M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0","M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"],"assets/icons/users-group.svg":["M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0","M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1","M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0","M17 10h2a2 2 0 0 1 2 2v1","M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0","M3 13v-1a2 2 0 0 1 2 -2h2"],"assets/icons/apps.svg":["M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4","M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4","M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4","M14 7l6 0","M17 4l0 6"],"assets/icons/shield-lock.svg":["M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3","M11 11a1 1 0 1 0 2 0a1 1 0 1 0 -2 0","M12 12l0 2.5"],"assets/icons/shield-check.svg":["M11.46 20.846a12 12 0 0 1 -7.96 -14.846a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 -.09 7.06","M15 19l2 2l4 -4"],"assets/icons/adjustments-horizontal.svg":["M12 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0","M4 6l8 0","M16 6l4 0","M6 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0","M4 12l2 0","M10 12l10 0","M15 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0","M4 18l11 0","M19 18l1 0"],"assets/icons/database.svg":["M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0","M4 6v6a8 3 0 0 0 16 0v-6","M4 12v6a8 3 0 0 0 16 0v-6"],"assets/icons/route.svg":["M3 19a2 2 0 1 0 4 0a2 2 0 0 0 -4 0","M19 7a2 2 0 1 0 0 -4a2 2 0 0 0 0 4","M11 19h5.5a3.5 3.5 0 0 0 0 -7h-8a3.5 3.5 0 0 1 0 -7h4.5"],"assets/icons/list-details.svg":["M13 5h8","M13 9h5","M13 15h8","M13 19h5","M3 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4","M3 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4"],"assets/icons/circle-check.svg":["M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0","M9 12l2 2l4 -4"]};
   const nodesByKey = new Map(report.nodes.map((node) => [node.Key, node]));
   const edgesByKey = new Map(report.edges.map((edge) => [edge.Key, edge]));
   const evidenceByKey = new Map(report.evidence.map((item) => [item.Key, item]));
@@ -24,6 +29,8 @@
   const reportStorageKey = `${tenantStorageKey}:${report.manifest?.generatedAtUtc || 'report'}`;
   const reviewStates = loadReviewStates();
   const pinnedKeys = loadPinnedKeys();
+  let adminWorkspace = null;
+  let viewGeneration = 0;
 
   for (const edge of report.edges) {
     if (!outgoing.has(edge.From)) {
@@ -511,9 +518,9 @@
 
   const viewLabels = {
     overview: {
-      title: 'Tenant overview',
+      title: 'Tenant administration',
       eyebrow: 'OVERVIEW',
-      subtitle: 'Search and inspect every collected object in this local report.',
+      subtitle: 'Review upcoming deadlines, responsibility gaps and collection issues.',
       empty: 'No objects were collected in this report.'
     },
     identities: {
@@ -746,6 +753,457 @@
     return section;
   }
 
+  function collectGroupDependencies(nodeKey, maximum = 500) {
+    const limit = Math.min(500, Math.max(1, Number.isFinite(maximum) ? Math.floor(maximum) : 500));
+    const node = nodesByKey.get(nodeKey);
+    if (!node || node.Kind !== 'group') return null;
+    const categories = {
+      assignments: { title: 'Role and application assignments', items: [] },
+      inclusions: { title: 'Conditional Access inclusions', items: [] },
+      exclusions: { title: 'Conditional Access exclusions', items: [] },
+      membership: { title: 'Membership and PIM relationships', items: [] },
+      governance: { title: 'Governance and review relationships', items: [] },
+      context: { title: 'Other collected relationships', items: [] }
+    };
+    // Walk the existing adjacency indexes, not the whole tenant graph. These
+    // are direct dependencies, never a claim of transitive effective access.
+    const total = (outgoing.get(nodeKey) || []).length + (incoming.get(nodeKey) || []).length;
+    let examined = 0;
+    for (const list of [outgoing.get(nodeKey) || [], incoming.get(nodeKey) || []]) {
+      for (const edge of list) {
+        if (examined >= limit) break;
+        examined++;
+        const outward = edge.From === nodeKey;
+        const relatedKey = outward ? edge.To : edge.From;
+        const related = nodesByKey.get(relatedKey);
+        const relation = edge.Relationship;
+        let category = 'context';
+        if (outward && ['assignedRole', 'eligibleRole', 'assignedAppRole'].includes(relation)) category = 'assignments';
+        else if (outward && relation === 'conditionalAccessIncludes') category = 'inclusions';
+        else if (outward && relation === 'conditionalAccessExcludes') category = 'exclusions';
+        else if (['memberOf', 'pimActiveMember', 'pimEligibleMember', 'pimActiveOwner', 'pimEligibleOwner'].includes(relation)) category = 'membership';
+        else if (['coveredByAccessReview', 'reviewedInAccessReview', 'resourceReviewedInAccessReview', 'grantsEntitlementResourceRole', 'memberOfAdministrativeUnit', 'administersAdministrativeUnit'].includes(relation)) category = 'governance';
+        const evidenceIds = Array.isArray(edge.EvidenceIds) ? edge.EvidenceIds : [];
+        categories[category].items.push({
+          edgeKey: edge.Key, relatedKey, relatedName: related?.DisplayName || relatedKey,
+          relationship: relation, direction: outward ? 'Outgoing' : 'Incoming',
+          evidenceIds,
+          evidenceComplete: !!related && evidenceIds.length > 0 && evidenceIds.every((id) => evidenceByKey.get(id)?.Completeness === 'complete'),
+          state: edge.State || {}
+        });
+      }
+    }
+    return { categories, total, examined, truncated: total > examined, observedAt: report.manifest.generatedAtUtc };
+  }
+
+  function renderGroupDependenciesSection(node) {
+    const result = collectGroupDependencies(node.Key);
+    if (!result) return null;
+    const section = makeElement('section', 'evidence-card');
+    section.append(
+      makeElement('h3', null, 'Group dependency inspector'),
+      makeElement('p', 'path-narrative', 'Direct collected relationships only. Policy exclusion is not an access grant. Membership, ownership and eligibility have different meanings; nested membership does not prove inherited application or directory-role access.'),
+      makeElement('p', 'muted-text', `Report observed at ${result.observedAt}. ${result.examined} of ${result.total} adjacent relationship records inspected. Dependencies outside collection coverage are unknown.`)
+    );
+    if (result.truncated) section.append(makeElement('p', null, 'Inspection limited to 500 records. Counts below describe inspected records only, not the whole group.'));
+    if (!result.total) section.append(makeElement('p', null, 'No direct dependency was collected. This is not proof that the group is unused or safe to delete.'));
+    for (const category of Object.values(result.categories)) {
+      if (!category.items.length) continue;
+      const details = makeElement('details');
+      details.append(makeElement('summary', null, `${category.title}: ${category.items.length}`));
+      for (const item of category.items.slice(0, 50)) {
+        const row = makeElement('section', 'evidence-card');
+        row.append(makeElement('p', null, `${item.direction}: ${formatRelationship(item.relationship)} > ${item.relatedName}`));
+        if (item.relationship === 'conditionalAccessExcludes') row.append(makeElement('p', null, 'Changing this relationship could change policy scope. A sign-in outcome is not evaluated.'));
+        if (['pimActiveOwner', 'pimEligibleOwner'].includes(item.relationship)) row.append(makeElement('p', null, 'Ownership is context, not membership.'));
+        if (['eligibleRole', 'pimEligibleMember', 'pimEligibleOwner'].includes(item.relationship)) row.append(makeElement('p', null, 'Eligibility requires activation; it is not standing active access.'));
+        row.append(makeElement('p', 'muted-text', item.evidenceComplete ? 'Linked evidence records are complete. This does not establish effective access.' : 'Evidence is missing, partial or unresolved.'));
+        const related = nodesByKey.get(item.relatedKey);
+        if (related) row.append(openNodeButton(related, 'Inspect connected object'));
+        const evidenceDetails = makeElement('details');
+        evidenceDetails.append(makeElement('summary', null, 'Relationship evidence'));
+        evidenceDetails.append(makeElement('pre', null, JSON.stringify({ relationship: item.edgeKey, state: item.state, evidence: item.evidenceIds.map((id) => {
+          const evidence = evidenceByKey.get(id);
+          return { id, collector: evidence?.Collector, endpoint: evidence?.Endpoint, observedAt: evidence?.CollectedAtUtc, completeness: evidence?.Completeness || 'Missing' };
+        }) }, null, 2)));
+        row.append(evidenceDetails);
+        details.append(row);
+      }
+      if (category.items.length > 50) details.append(makeElement('p', null, 'First 50 inspected records shown in this category. Full source evidence remains in the report.'));
+      section.append(details);
+    }
+    return section;
+  }
+
+  function createAccessAnalysis(snapshot) {
+    if (!snapshot?.manifest?.tenant?.id || !Array.isArray(snapshot.nodes) || !Array.isArray(snapshot.edges) || !Array.isArray(snapshot.evidence)) throw new Error('Invalid tenant snapshot structure.');
+    const nodes = new Map(snapshot.nodes.map(n => [n.Key, n]));
+    const evidence = new Map(snapshot.evidence.map(e => [e.Key, e]));
+    const out = new Map();
+    const incomingIndex = new Map();
+    for (const edge of snapshot.edges) {
+      if (!out.has(edge.From)) out.set(edge.From, []);
+      if (!incomingIndex.has(edge.To)) incomingIndex.set(edge.To, []);
+      out.get(edge.From).push(edge);
+      incomingIndex.get(edge.To).push(edge);
+    }
+    const at = Date.parse(snapshot.manifest.generatedAtUtc);
+    const label = key => nodes.get(key)?.DisplayName || key;
+    const proof = edge => nodes.has(edge.From) && nodes.has(edge.To) &&
+      nodes.get(edge.From).Status === 'complete' && nodes.get(edge.To).Status === 'complete' &&
+      edge.EvidenceIds?.length > 0 && edge.EvidenceIds.every(id => evidence.get(id)?.Completeness === 'complete');
+    function timing(state = {}) {
+      for (const field of ['startDateTime', 'endDateTime']) {
+        if (state[field] && !Number.isFinite(Date.parse(state[field]))) return 'Unknown timing';
+      }
+      if (!Number.isFinite(at)) return 'Unknown timing';
+      if (state.startDateTime && Date.parse(state.startDateTime) > at) return 'Future';
+      if (state.endDateTime && Date.parse(state.endDateTime) <= at) return 'Expired';
+      return 'Observed';
+    }
+    function routes(source, omitted = null) {
+      const paths = [];
+      let inspected = 0;
+      let truncated = false;
+      const sourceNode = nodes.get(source);
+      if (!sourceNode) return { paths, truncated: false };
+      const add = edges => {
+        const terminal = edges.at(-1);
+        const state = terminal.State || {};
+        const targetKind = nodes.get(terminal.To)?.Kind;
+        if (['assignedRole', 'eligibleRole'].includes(terminal.Relationship) && targetKind !== 'roleDefinition') return;
+        if (terminal.Relationship === 'assignedAppRole' && targetKind !== 'servicePrincipal') return;
+        const states = edges.map(e => {
+          const schedules = e.State?.scheduleInstances;
+          if (e.Relationship === 'assignedRole' && schedules?.length) {
+            const scheduleStates = schedules.map(timing);
+            return scheduleStates.includes('Observed') ? 'Observed' : scheduleStates.every(s => s === 'Expired') ? 'Expired' : 'Unknown timing';
+          }
+          return timing(e.State);
+        });
+        const temporal = states.find(s => s !== 'Observed') || 'Observed';
+        const eligible = edges.some(e => ['eligibleRole', 'pimEligibleMember'].includes(e.Relationship));
+        const type = temporal !== 'Observed' ? temporal : eligible ? 'Eligible: activation required' : 'Observed assignment';
+        const permission = terminal.Relationship === 'assignedAppRole' ? state.appRoleId : null;
+        const scope = ['assignedRole', 'eligibleRole'].includes(terminal.Relationship) ? state.directoryScopeId : null;
+        const complete = edges.every(proof) && (terminal.Relationship !== 'assignedAppRole' || Boolean(permission)) &&
+          (!['assignedRole', 'eligibleRole'].includes(terminal.Relationship) || typeof scope === 'string');
+        paths.push({ target: terminal.To, targetName: label(terminal.To), entitlement: JSON.stringify([terminal.To, permission, scope, state.appScopeId || null]),
+          identity: JSON.stringify(edges.map(e => [e.From, e.To, e.Relationship, e.State?.appRoleId || null, e.State?.directoryScopeId || null, e.State?.appScopeId || null])),
+          edgeKeys: edges.map(e => e.Key), type, complete, state, description: [label(source), ...edges.map(e => `${e.Relationship} > ${label(e.To)}`)].join(' > ') });
+      };
+      // One group hop only: nested groups do not inherit enterprise application or directory role assignments.
+      for (const edge of out.get(source) || []) {
+        if (++inspected > 5000 || paths.length >= 500) { truncated = true; break; }
+        if (edge.Key === omitted) continue;
+        if (['assignedAppRole', 'assignedRole', 'eligibleRole'].includes(edge.Relationship)) add([edge]);
+        if (['memberOf', 'pimActiveMember', 'pimEligibleMember'].includes(edge.Relationship) && nodes.get(edge.To)?.Kind === 'group') add([edge]);
+        if (['user', 'guestUser'].includes(sourceNode.Kind) && ['memberOf', 'pimActiveMember', 'pimEligibleMember'].includes(edge.Relationship) && nodes.get(edge.To)?.Kind === 'group') {
+          for (const assignment of out.get(edge.To) || []) {
+            if (++inspected > 5000 || paths.length >= 500) { truncated = true; break; }
+            if (assignment.Key !== omitted && ['assignedAppRole', 'assignedRole', 'eligibleRole'].includes(assignment.Relationship)) add([edge, assignment]);
+          }
+        }
+      }
+      return { paths, truncated };
+    }
+    function completeCoverage(other) {
+      const a = snapshot.manifest.coverage;
+      const b = other.manifest.coverage;
+      const collectors = c => JSON.stringify((c?.collectors || []).map(x => [x.name, x.status]).sort());
+      return a?.status === 'complete' && b?.status === 'complete' && a.collectors?.length > 0 &&
+        a.collectors.every(c => c.status === 'complete') && b.collectors?.every(c => c.status === 'complete') && collectors(a) === collectors(b) && collectedAfter(Date.parse(other.manifest.generatedAtUtc));
+    }
+    function collectedAfter(boundary) {
+      const collectors = (snapshot.manifest.coverage?.collectors || []).filter(c => c.name !== 'permissionPreflight');
+      return collectors.length > 0 && collectors.every(c => {
+        const start = Date.parse(c.metrics?.collectionStartedAtUtc);
+        const end = Date.parse(c.metrics?.collectionCompletedAtUtc);
+        return Number.isFinite(start) && Number.isFinite(end) && start > boundary && end >= start && end <= at;
+      });
+    }
+    function compare(previous, source) {
+      if (previous.manifest?.tenant?.id !== snapshot.manifest.tenant.id || !snapshot.manifest.tenant.id) throw new Error('Snapshots must belong to the same tenant.');
+      if (previous.manifest.schemaVersion !== snapshot.manifest.schemaVersion) throw new Error('Snapshot schemas must match.');
+      const beforeTime = Date.parse(previous.manifest.generatedAtUtc);
+      if (!Number.isFinite(beforeTime) || !Number.isFinite(at) || beforeTime >= at) throw new Error('Choose a strictly earlier snapshot with a valid collection timestamp.');
+      const before = createAccessAnalysis(previous).routes(source);
+      const after = routes(source);
+      const removed = before.paths.filter(p => !after.paths.some(q => q.identity === p.identity));
+      const verified = completeCoverage(previous) && !before.truncated && !after.truncated;
+      return { verified, truncated: before.truncated || after.truncated, searchScope: 'Direct memberships, direct role/application assignments and one group hop. Other mechanisms are outside this verification.',
+        conclusions: removed.map(p => ({ path: p.description, entitlement: p.entitlement,
+          result: verified && p.complete ? 'Collected path removed' : 'Unable to verify removal: path no longer observed',
+          alternatives: after.paths.filter(q => q.entitlement === p.entitlement && q.type === 'Observed assignment').map(q => q.description),
+          eligible: after.paths.filter(q => q.entitlement === p.entitlement && q.type.startsWith('Eligible')).map(q => q.description) })),
+        remaining: after.paths, caveat: 'Configuration evidence only. Removing an assignment does not prove that tokens were revoked or existing application sessions ended. Absence of supported paths does not prove absence of every access mechanism.' };
+    }
+    function reviews(previous, source) {
+      const comparison = compare(previous, source);
+      const previousEdges = previous.edges.filter(e => e.From === source && e.Relationship === 'reviewedInAccessReview');
+      const decisionKey = e => JSON.stringify([e.From, e.To, e.State?.resourceId, e.State?.decisionId || 'legacy']);
+      const decisions = new Map(previousEdges.map(e => [decisionKey(e), e]));
+      for (const e of out.get(source) || []) if (e.Relationship === 'reviewedInAccessReview') decisions.set(decisionKey(e), e);
+      return [...decisions.values()].slice(0, 100).map(edge => {
+        const state = edge.State || {};
+        const resource = [...nodes.values()].find(n => n.Id === state.resourceId);
+        let result = 'Unable to verify';
+        let explanation = 'The decision must be Deny, identify an exact resource, and have application and chronological assignment evidence.';
+        if (state.decision === 'Deny' && ['New', 'NotApplied'].includes(state.applyResult)) {
+          result = 'Decision pending application';
+          explanation = `Collected apply result: ${state.applyResult || 'missing'}. No removal is confirmed.`;
+        } else if (state.decision === 'Deny' && resource && Number.isFinite(Date.parse(state.appliedDateTime)) && Date.parse(state.appliedDateTime) < at) {
+          const removed = comparison.conclusions.filter(c => JSON.parse(c.entitlement)[0] === resource.Key);
+          const earlierPaths = createAccessAnalysis(previous).routes(source).paths.filter(p => p.target === resource.Key);
+          // A review resource alone does not identify one of several app roles. Do not guess.
+          if (removed.length === 1 && earlierPaths.filter(p => p.edgeKeys.length === 1).length === 1 &&
+              earlierPaths.find(p => p.description === removed[0].path)?.edgeKeys.length === 1 &&
+              Date.parse(state.appliedDateTime) > Date.parse(previous.manifest.generatedAtUtc) &&
+              collectedAfter(Date.parse(state.appliedDateTime)) &&
+              removed[0].result === 'Collected path removed' && proof(edge)) {
+            result = removed[0].alternatives.length ? 'Alternative path remains' : 'Reviewed path removed';
+            explanation = `${removed[0].path}. ${removed[0].eligible.length ? 'Eligible PIM routes remain.' : 'No eligible route observed by the supported search.'}`;
+          }
+        }
+        return { review: label(edge.To), resource: resource?.DisplayName || state.resourceId || 'Missing resource', result, explanation, state, evidenceIds: edge.EvidenceIds };
+      });
+    }
+    function dynamic(group, person) {
+      const rule = nodes.get(group)?.Properties?.membershipRule;
+      const subject = nodes.get(person);
+      const observed = (out.get(person) || []).some(e => e.Relationship === 'memberOf' && e.To === group);
+      const conditions = [];
+      if (typeof rule !== 'string' || rule.length > 4096 || !['user', 'guestUser'].includes(subject?.Kind)) return { result: 'Unevaluated', observed, conditions };
+      // Deliberately limited grammar. No eval, regex operators, collection operators or guessed attributes.
+      const tokenPattern = /\s*(\(|\)|-and\b|-or\b|user\.[a-zA-Z]+|-(?:eq|ne)\b|true\b|false\b|null\b|"[^"\\]*")/gy;
+      const tokens = [];
+      let position = 0;
+      while (position < rule.trimEnd().length) {
+        tokenPattern.lastIndex = position;
+        const match = tokenPattern.exec(rule);
+        if (!match) return { rule, result: 'Unevaluated: unsupported expression', observed, conditions: [] };
+        tokens.push(match[1]); position = tokenPattern.lastIndex;
+        if (tokens.length > 256) return { rule, result: 'Unevaluated: expression limit', observed, conditions: [] };
+      }
+      let cursor = 0;
+      const attributes = ['department', 'accountEnabled', 'userType', 'jobTitle', 'companyName', 'country', 'city', 'officeLocation', 'userPrincipalName'];
+      function atom(depth) {
+        if (depth > 20) throw new Error('Expression limit');
+        if (tokens[cursor] === '(') { cursor++; const value = expression(depth + 1); if (tokens[cursor++] !== ')') throw new Error('Unbalanced expression'); return value; }
+        const attribute = tokens[cursor++]?.replace(/^user\./, '');
+        const operator = tokens[cursor++];
+        const literal = tokens[cursor++];
+        if (!attributes.includes(attribute) || !['-eq', '-ne'].includes(operator) || !/^(true|false|null|"[^"\\]*")$/.test(literal || '')) throw new Error('Unsupported expression');
+        const expected = JSON.parse(literal);
+        const properties = subject.Properties || {};
+        const value = properties[attribute];
+        let outcome = null;
+        if (Object.hasOwn(properties, attribute)) {
+          outcome = typeof value === 'string' && typeof expected === 'string' ? value.toLowerCase() === expected.toLowerCase() : value === expected;
+          if (operator === '-ne') outcome = !outcome;
+        }
+        conditions.push({ attribute, operator, expected, collected: value === undefined ? 'Not collected' : value, outcome });
+        return outcome;
+      }
+      function and(depth) { let value = atom(depth); while (tokens[cursor] === '-and') { cursor++; const right = atom(depth); value = value === false || right === false ? false : value === null || right === null ? null : true; } return value; }
+      function expression(depth) { let value = and(depth); while (tokens[cursor] === '-or') { cursor++; const right = and(depth); value = value === true || right === true ? true : value === null || right === null ? null : false; } return value; }
+      try {
+        const value = expression(0);
+        if (cursor !== tokens.length) throw new Error('Unsupported expression');
+        return { rule, result: value === null ? 'Unevaluated: missing attributes' : value ? 'Calculated match' : 'Calculated non-match', observed, conditions,
+          downstream: routes(person).paths.filter(p => p.edgeKeys.some(k => (out.get(person) || []).some(e => e.Key === k && e.To === group))) };
+      } catch { return { rule, result: 'Unevaluated: unsupported expression', observed, conditions: [] }; }
+    }
+    function pim(role) {
+      const rows = [];
+      const roleEdges = incomingIndex.get(role) || [];
+      let limited = roleEdges.length > 500;
+      for (const edge of roleEdges.slice(0, 500)) {
+        if (rows.length >= 500) { limited = true; break; }
+        if (!['assignedRole', 'eligibleRole'].includes(edge.Relationship)) continue;
+        const state = edge.State || {};
+        const instances = state.scheduleInstances || [];
+        const current = instances.filter(s => timing(s) === 'Observed');
+        const category = edge.Relationship === 'eligibleRole' ? `Eligible: ${timing(state)}` : current.some(s => s.assignmentType === 'Assigned') ? 'Standing active assignment' : current.some(s => s.assignmentType === 'Activated') ? 'PIM activation' : 'Active assignment: standing or activated unknown';
+        const row = { principal: label(edge.From), principalKey: edge.From, category, scope: state.directoryScopeId || 'Missing scope', appScope: state.appScopeId || null, expiry: state.endDateTime || current.map(s => s.endDateTime || 'No end date').join(', ') || 'Not collected', complete: proof(edge), evidenceIds: edge.EvidenceIds };
+        rows.push(row);
+        if (nodes.get(edge.From)?.Kind === 'group') {
+          if ((incomingIndex.get(edge.From) || []).length > 500) limited = true;
+          for (const membership of (incomingIndex.get(edge.From) || []).slice(0, 500)) {
+            if (rows.length >= 500) { limited = true; break; }
+            if (!['user', 'guestUser'].includes(nodes.get(membership.From)?.Kind) || !['memberOf', 'pimActiveMember', 'pimEligibleMember'].includes(membership.Relationship)) continue;
+            const eligibleMembership = membership.Relationship === 'pimEligibleMember';
+            const membershipTiming = timing(membership.State);
+            rows.push({ ...row, principal: label(membership.From), principalKey: membership.From,
+              viaGroup: label(edge.From), category: membershipTiming !== 'Observed' ? membershipTiming : eligibleMembership ? 'Eligible: group activation required' : membership.Relationship === 'pimActiveMember' && category === 'Standing active assignment' ? 'Group active membership: standing or activated unknown' : category,
+              complete: row.complete && proof(membership), evidenceIds: [...(row.evidenceIds || []), ...(membership.EvidenceIds || [])] });
+            const groupPimCollected = snapshot.manifest.coverage?.collectors?.some(c => c.name === 'pimGroups' && c.status === 'complete');
+            const hasPimMembership = (out.get(membership.From) || []).some(e => e.To === edge.From && e.Relationship === 'pimActiveMember');
+            if (membership.Relationship === 'memberOf' && rows.at(-1).category === 'Standing active assignment' && (!groupPimCollected || hasPimMembership)) {
+              rows.at(-1).category = 'Group membership: standing or activated unknown';
+            }
+          }
+        }
+      }
+      const policies = nodes.get(role)?.Properties?.pimPolicies || [];
+      const requirements = policies.map(p => ({ policyId: p.policyId, scope: p.scopeId, complete: evidence.get(p.evidenceId)?.Completeness === 'complete', evidenceId: p.evidenceId,
+        activationRules: (p.rules || []).filter(r => r.target?.caller === 'EndUser' && r.target?.level === 'Assignment').map(r => ({ id: r.id, type: r['@odata.type'], approval: r.setting?.isApprovalRequired, authentication: r.enabledRules, authenticationContext: r.isEnabled ? r.claimValue : undefined, maximumDuration: r.maximumDuration, expirationRequired: r.isExpirationRequired })) }));
+      const alternatives = rows.filter(a => a.category.startsWith('Eligible: Observed') || a.category === 'Eligible: group activation required').flatMap(a => rows.filter(b => b.principalKey === a.principalKey && b.scope === a.scope && a.scope !== 'Missing scope' && b.appScope === a.appScope && b.category === 'Standing active assignment' && a.complete && b.complete).map(() => `${a.principal} has eligible and standing active assignments at scope ${a.scope}.`));
+      return { rows: rows.slice(0, 500), truncated: limited || rows.length > 500, requirements, alternatives: alternatives.slice(0, 100), warning: 'Missing policy or schedule evidence is unknown, not proof of no protection. Group membership activation policies are not inferred from role policies. Requirements describe configuration, not proof that a particular activation satisfied them.' };
+    }
+    function preview(group, membershipKey) {
+      const membership = snapshot.edges.find(e => e.Key === membershipKey && e.To === group && e.Relationship === 'memberOf');
+      if (!membership) throw new Error('Choose an observed direct membership.');
+      const before = routes(membership.From);
+      const after = routes(membership.From, membershipKey);
+      const affected = before.paths.filter(p => p.edgeKeys.includes(membershipKey));
+      return { removed: affected, remaining: after.paths.filter(p => affected.some(a => a.entitlement === p.entitlement)),
+        policyChanges: (out.get(group) || []).filter(e => ['conditionalAccessIncludes', 'conditionalAccessExcludes'].includes(e.Relationship)).map(e => ({ policy: label(e.To), consequence: e.Relationship === 'conditionalAccessExcludes' ? 'This membership would no longer supply this Conditional Access exclusion.' : 'This membership would no longer supply this Conditional Access inclusion.', evidenceIds: e.EvidenceIds })),
+        truncated: before.truncated || after.truncated, warning: 'Local hypothetical change only. No tenant changes. Other policy scopes, nested memberships and live sign-in conditions may change the outcome. Dynamic membership can be restored by rule processing.' };
+    }
+    function dossier(key) {
+      const selected = nodes.get(key);
+      const registration = selected?.Kind === 'application' ? selected : [...nodes.values()].find(n => n.Kind === 'application' && n.Properties?.appId && n.Properties.appId === selected?.Properties?.appId);
+      const principal = selected?.Kind === 'servicePrincipal' ? selected : [...nodes.values()].find(n => n.Kind === 'servicePrincipal' && n.Properties?.appId && n.Properties.appId === selected?.Properties?.appId);
+      const requested = (out.get(registration?.Key) || []).filter(e => e.Relationship === 'requiresApiPermission').map(e => ({ ...nodes.get(e.To)?.Properties, evidenceIds: e.EvidenceIds }));
+      const grants = [];
+      for (const edge of out.get(principal?.Key) || []) {
+        if (edge.Relationship === 'assignedAppRole') {
+          const resource = nodes.get(edge.To);
+          const permission = resource?.Properties?.appRoles?.find(p => p?.id === edge.State?.appRoleId);
+          grants.push({ resourceAppId: resource?.Properties?.appId, resource: label(edge.To), resourceAccessId: edge.State?.appRoleId, permissionType: 'Role', name: permission?.value || edge.State?.appRoleId, description: permission?.description || 'Description not collected', consent: 'Application permission', evidenceIds: edge.EvidenceIds });
+        }
+        if (edge.Relationship === 'hasDelegatedConsent') {
+          const state = edge.State || {};
+          const resource = [...nodes.values()].find(n => n.Id === state.resourceId && n.Kind === 'servicePrincipal');
+          for (const scope of (state.scope || '').split(/\s+/).filter(Boolean)) {
+            const permission = resource?.Properties?.oauth2PermissionScopes?.find(p => p?.value === scope);
+            grants.push({ resourceAppId: resource?.Properties?.appId, resource: resource?.DisplayName || state.resourceId, resourceAccessId: permission?.id, permissionType: 'Scope', name: scope, description: permission?.adminConsentDescription || 'Description not collected', consent: state.consentType === 'AllPrincipals' ? 'Tenant-wide delegated consent' : `Individual-user delegated consent: ${state.principalId || 'unresolved'}`, evidenceIds: edge.EvidenceIds });
+          }
+        }
+      }
+      const matches = (a, b) => a.resourceAppId && a.resourceAccessId && a.resourceAppId === b.resourceAppId && a.resourceAccessId === b.resourceAccessId && a.permissionType === b.permissionType;
+      const context = [registration?.Key, principal?.Key].filter(Boolean).flatMap(k => (out.get(k) || []).filter(e => ['ownedBy', 'hasCredential'].includes(e.Relationship)).map(e => ({ relationship: e.Relationship, name: label(e.To), properties: nodes.get(e.To)?.Properties, evidenceIds: e.EvidenceIds })));
+      return { requestedListEvidence: registration ? 'App registration collected; inspect registration coverage before treating omissions as absence.' : 'App registration not collected. Its requested list is unavailable, not empty.',
+        delegatedConsentEvidence: snapshot.manifest.coverage?.collectors?.find(c => c.name === 'delegatedConsent')?.status || 'Not collected. Use IncludeConsent during collection.',
+      requested: requested.map(r => {
+        if (!['Role', 'Scope'].includes(r.permissionType)) return { ...r, result: 'Unevaluated: unsupported permission type', warning: 'Raw permission type retained. No grant matching attempted for this request.' };
+        const resource = [...nodes.values()].find(n => n.Kind === 'servicePrincipal' && n.Properties?.appId === r.resourceAppId);
+        const definition = (r.permissionType === 'Role' ? resource?.Properties?.appRoles : resource?.Properties?.oauth2PermissionScopes)?.find(p => p?.id === r.resourceAccessId);
+        return { ...r, resource: resource?.DisplayName || r.resourceAppId, name: definition?.value || r.resourceAccessId, description: definition?.description || definition?.adminConsentDescription || 'Description not collected', result: grants.some(g => matches(r, g)) ? 'Matching collected grant' : 'No matching collected grant: not proof consent is absent' };
+      }),
+        grants: grants.map(g => ({ ...g, result: !registration ? 'Requested list unavailable' : !g.resourceAppId || !g.resourceAccessId ? 'Unable to match: resource permission definition missing' : requested.some(r => matches(r, g)) ? 'In requested list' : 'Not matched to current requested list' })), context,
+        warning: 'Requested permissions are not grants. Delegated grants operate with a user; application grants do not. Resource-specific grants and application-side authorisation may be outside collection. No permission is automatically described as access to all tenant data. Missing resource definitions prevent exact matching.' };
+    }
+    return { routes, compare, reviews, dynamic, pim, preview, dossier };
+  }
+
+  function renderAnalysisValue(value, depth = 0) {
+    const container = makeElement('div', 'analysis-value');
+    if (depth > 6) { container.append(makeElement('p', null, 'Nested evidence omitted from this view; inspect the source report.')); return container; }
+    if (Array.isArray(value)) {
+      if (!value.length) container.append(makeElement('p', 'muted-text', 'None observed in this result.'));
+      for (const item of value.slice(0, 100)) container.append(renderAnalysisValue(item, depth + 1));
+      if (value.length > 100) container.append(makeElement('p', null, `First 100 of ${value.length} results shown.`));
+    } else if (value !== null && typeof value === 'object') {
+        const grid = makeElement('dl', 'property-grid');
+        const technical = {};
+        for (const [key, item] of Object.entries(value)) {
+          if (['target', 'principalKey', 'edgeKeys', 'entitlement', 'identity', 'evidenceIds', 'evidenceId', 'resourceAccessId', 'resourceAppId', 'policyId'].includes(key)) { technical[key] = item; continue; }
+        grid.append(makeElement('dt', null, key === 'complete' ? 'Relationship evidence complete' : formatPropertyName(key)));
+        const cell = makeElement('dd');
+        cell.append(item !== null && typeof item === 'object' ? renderAnalysisValue(item, depth + 1) : makeElement('span', null, item == null ? 'Not collected or not applicable' : typeof item === 'boolean' ? item ? 'Yes' : 'No' : String(item)));
+        grid.append(cell);
+      }
+      container.append(grid);
+      if (Object.keys(technical).length) {
+        const detail = makeElement('details');
+        detail.append(makeElement('summary', null, 'Evidence identifiers'), makeElement('pre', null, JSON.stringify(technical, null, 2)));
+        container.append(detail);
+      }
+    } else container.append(makeElement('p', null, String(value)));
+    return container;
+  }
+
+  function renderAccessAnalysisSection(node) {
+    const section = makeElement('section', 'evidence-card');
+    const analysis = accessAnalysis || (accessAnalysis = createAccessAnalysis(report));
+    const show = (heading, value) => {
+      const details = makeElement('details');
+      details.append(makeElement('summary', null, heading), renderAnalysisValue(value));
+      section.append(details);
+    };
+    if (node.Kind === 'roleDefinition') show('Is PIM protecting this role?', analysis.pim(node.Key));
+    if (['application', 'servicePrincipal'].includes(node.Kind)) show('Application permission dossier', analysis.dossier(node.Key));
+    if (node.Kind === 'group') {
+      const memberships = (incoming.get(node.Key) || []).filter(e => e.Relationship === 'memberOf').slice(0, 500);
+      const select = makeElement('select');
+      select.setAttribute('aria-label', 'Choose observed membership for local preview');
+      select.append(makeElement('option', null, 'Choose a membership'));
+      select.firstChild.value = '';
+      for (const e of memberships) { const option = makeElement('option', null, nodesByKey.get(e.From)?.DisplayName || e.From); option.value = e.Key; select.append(option); }
+      const output = makeElement('div');
+      section.append(makeElement('h3', null, 'Local membership change preview'), makeElement('p', null, 'First 500 observed direct memberships. This does not change the tenant.'), select, output);
+      select.addEventListener('change', () => {
+        output.replaceChildren();
+        if (!select.value) return;
+        output.append(renderAnalysisValue(analysis.preview(node.Key, select.value)));
+        if (node.Properties?.membershipRule) {
+          const member = memberships.find(e => e.Key === select.value);
+          output.append(makeElement('h4', null, 'Dynamic rule explanation'), makeElement('p', null, 'Calculated results are separate from observed membership. Collection timing and processing delays can differ.'), renderAnalysisValue(analysis.dynamic(node.Key, member.From)));
+        }
+      });
+      if (node.Properties?.membershipRule) show('Dynamic membership rule', { rule: node.Properties.membershipRule, note: 'Choose a member above. Supported: user attributes with eq/ne, and/or and parentheses. Other expressions remain unevaluated.' });
+    }
+    if (['user', 'guestUser', 'servicePrincipal', 'application'].includes(node.Kind)) {
+      const input = makeElement('input'); input.type = 'file'; input.accept = '.json,application/json';
+      input.setAttribute('aria-label', 'Earlier tenant report JSON for access verification');
+      const output = makeElement('div'); output.setAttribute('aria-live', 'polite');
+      const baselineLabel = makeElement('p', 'muted-text');
+      const clearBaseline = makeElement('button', null, 'Clear baseline'); clearBaseline.type = 'button';
+      section.append(makeElement('h3', null, 'Verify access removal and review outcomes'), makeElement('p', null, 'Choose data/report.json from an earlier snapshot of this tenant. Processing stays local. This is not a session revocation check.'), input, output);
+      input.before(baselineLabel, clearBaseline);
+      const renderBaseline = () => {
+        output.replaceChildren();
+        baselineLabel.textContent = accessBaseline ? `Loaded: ${accessBaseline.name} | ${accessBaseline.report.manifest.generatedAtUtc}. Kept in memory until cleared or this page closes.` : 'No baseline loaded.';
+        clearBaseline.disabled = !accessBaseline;
+        if (!accessBaseline) return;
+        try {
+          const source = node.Kind === 'application' ? (outgoing.get(node.Key) || []).find(e => e.Relationship === 'hasServicePrincipal')?.To : node.Key;
+          if (!source) throw new Error('A collected service principal is required for this application.');
+          const result = analysis.compare(accessBaseline.report, source);
+          output.append(makeElement('h4', null, `${result.conclusions.length} path(s) no longer observed`));
+          const incomplete = [...new Set([report, accessBaseline.report].flatMap(r => (r.manifest.coverage?.collectors || []).filter(c => c.status !== 'complete').map(c => c.name)))];
+          output.append(makeElement('p', 'verification-status', result.verified ? 'Collection coverage and timing checks passed. Inspect each path conclusion below.' : `Removal cannot be fully verified. ${incomplete.length ? `Incomplete collectors: ${incomplete.join(', ')}. ` : ''}Both snapshots need complete matching coverage, later collector timestamps and an untruncated search.`));
+          for (const conclusion of result.conclusions) {
+            const card = makeElement('section', 'verification-conclusion');
+            card.append(makeElement('h4', null, conclusion.path), makeElement('p', null, conclusion.result), renderAnalysisValue({ alternatives: conclusion.alternatives, eligible: conclusion.eligible })); output.append(card);
+          }
+          output.append(makeElement('p', 'muted-text', result.caveat));
+          for (const [title, value] of [['Other collected paths', result.remaining], ['Technical verification details', { verified: result.verified, truncated: result.truncated, searchScope: result.searchScope }], ['Access Review outcome verification', analysis.reviews(accessBaseline.report, source)]]) {
+            const detail = makeElement('details'); detail.append(makeElement('summary', null, title), renderAnalysisValue(value)); output.append(detail);
+          }
+        } catch (error) { output.replaceChildren(makeElement('p', null, error.message)); }
+      };
+      clearBaseline.addEventListener('click', () => { baselineLoadSequence++; accessBaseline = null; input.value = ''; renderBaseline(); });
+      renderBaseline();
+      input.addEventListener('change', async () => {
+        const sequence = ++baselineLoadSequence;
+        try {
+          const file = input.files[0];
+          if (!file) return;
+          if (file.size > 64 * 1024 * 1024) throw new Error('Choose a report JSON smaller than 64 MB.');
+          const previous = JSON.parse(await file.text());
+          analysis.compare(previous, node.Key);
+          if (sequence !== baselineLoadSequence) return;
+          accessBaseline = { name: file.name, report: previous };
+          if (selectedKey && nodesByKey.has(selectedKey)) renderObjectDetails(nodesByKey.get(selectedKey));
+        } catch (error) { if (sequence === baselineLoadSequence) output.replaceChildren(makeElement('p', null, `${error.message} The previously loaded baseline, if any, is unchanged.`)); }
+      });
+    }
+    return section;
+  }
+
   function renderObjectDetails(node) {
     elements.objectDetails.replaceChildren();
     const grid = makeElement('dl', 'property-grid');
@@ -797,7 +1255,9 @@
       renderConditionalAccessImpactSection(node)
     ].filter(Boolean);
 
-    elements.objectDetails.append(grid, relationshipHeading, relationshipList, ...extraSections);
+    const dependencies = renderGroupDependenciesSection(node);
+    if (dependencies) elements.objectDetails.append(dependencies);
+    elements.objectDetails.append(renderAccessAnalysisSection(node), grid, relationshipHeading, relationshipList, ...extraSections);
   }
 
   function setInspectorTab(tabName) {
@@ -1835,7 +2295,9 @@
     searchTimer = window.setTimeout(updateSearch, 90);
   }
 
-  function setActiveView(viewName) {
+  function setActiveView(viewName, preferredKey = null) {
+    const generation = ++viewGeneration;
+    if (adminWorkspace) adminWorkspace.hide();
     const nextView = viewLabels[viewName] ? viewName : 'access';
     activeView = nextView;
     selectedKey = null;
@@ -1862,11 +2324,12 @@
     document.querySelector('.page-heading h2').textContent = viewLabels[nextView].title;
     elements.pageSubtitle.textContent = viewLabels[nextView].subtitle;
     updateSearch().then(() => {
-      if (activeView !== nextView) {
+      if (activeView !== nextView || generation !== viewGeneration) {
         return;
       }
       if (nextView === 'overview') {
-        renderCoverageDetails();
+        if (adminWorkspace) adminWorkspace.home();
+        else renderCoverageDetails();
         return;
       }
       if (nextView === 'insights') {
@@ -1882,7 +2345,10 @@
         return;
       }
       const firstResult = elements.searchResults.querySelector('[data-node-key]');
-      if (firstResult) {
+      if (preferredKey && nodesByKey.has(preferredKey)) {
+        selectNode(preferredKey);
+      }
+      else if (firstResult) {
         selectNode(firstResult.dataset.nodeKey);
       }
       else {
@@ -2548,7 +3014,7 @@
     downloadTextFile('identity-atlas-graph.mmd', `${lines.join('\n')}\n`, 'text/plain');
   }
 
-  function currentGraphSvgContent() {
+  async function currentGraphSvgContent() {
     if (!currentGraph.nodeKeys.length) {
       return '';
     }
@@ -2557,14 +3023,23 @@
     clone.setAttribute('width', '640');
     clone.setAttribute('height', '720');
     for (const image of clone.querySelectorAll('image')) {
-      image.remove();
+      const href = image.getAttribute('href');
+      const allowed = new Set(report.nodes.map(n => graphIconHref(n.Kind)));
+      if (!allowed.has(href) || !/^assets\/icons\/[a-z0-9-]+\.svg$/.test(href)) { image.remove(); continue; }
+      try {
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        for (const attr of ['x', 'y', 'width', 'height']) icon.setAttribute(attr, image.getAttribute(attr));
+        icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('fill', 'none'); icon.setAttribute('stroke', '#102033'); icon.setAttribute('stroke-width', '2'); icon.setAttribute('stroke-linecap', 'round'); icon.setAttribute('stroke-linejoin', 'round');
+        for (const path of exportIconPaths[href] || exportIconPaths['assets/icons/apps.svg']) { const clean = document.createElementNS('http://www.w3.org/2000/svg', 'path'); clean.setAttribute('d', path); icon.append(clean); }
+        image.replaceWith(icon);
+      } catch { image.remove(); }
     }
     const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
     title.textContent = currentGraph.summary || 'Identity Atlas graph';
     clone.prepend(title);
     const styles = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     styles.textContent = `
-      .graph-edge { stroke: #a7b4c2; stroke-width: 2; }
+      .graph-edge { fill: none; stroke: #a7b4c2; stroke-width: 2; }
       .graph-edge-label-bg { fill: #ffffff; stroke: #d9e2eb; }
       .graph-edge-label { fill: #425466; font: 600 12px Arial, sans-serif; text-anchor: middle; }
       .node-card { fill: #ffffff; stroke: #cfd9e4; stroke-width: 1.5; }
@@ -2577,8 +3052,8 @@
     return new XMLSerializer().serializeToString(clone);
   }
 
-  function exportCurrentSvg() {
-    const content = currentGraphSvgContent();
+  async function exportCurrentSvg() {
+    const content = await currentGraphSvgContent();
     if (!content) {
       return;
     }
@@ -2586,7 +3061,7 @@
   }
 
   async function prepareCurrentPng(renderSequence) {
-    const content = currentGraphSvgContent();
+    const content = await currentGraphSvgContent();
     if (!content) {
       return;
     }
@@ -2809,6 +3284,21 @@
     }
   });
   applyLayoutSettings();
+  adminWorkspace = window.IdentityAtlasAdmin.mount(report, {
+    viewChanged: title => { viewGeneration++; elements.headerExplainAccess.disabled = true; document.querySelector('.page-heading .eyebrow').textContent = 'ADMINISTRATION'; elements.pageSubtitle.textContent = 'Local administration views from collected evidence. Tenant changes are made separately in Microsoft Entra.'; for (const item of elements.navItems) { item.classList.toggle('selected', title === 'Tenant administration' && item.dataset.view === 'overview'); item.removeAttribute('aria-current'); } },
+    open: key => setActiveView('access', key),
+    coverage: () => renderCoverageDetails(),
+    dossier: key => { if (!accessAnalysis) accessAnalysis = createAccessAnalysis(report); return accessAnalysis.dossier(key); },
+    download: downloadTextFile,
+    graph: (keys, edges) => { selectedKey = null; renderGraph(keys, edges, 'Combined collected relationships'); }
+  });
+  const directoryButton = makeElement('button', 'nav-item');
+  const directoryLabel = makeElement('span');
+  directoryLabel.append(makeElement('strong', null, 'Object directory'), makeElement('small', null, 'Tables and administration'));
+  directoryButton.append(makeElement('span', 'icon icon-list-details'), directoryLabel);
+  directoryButton.type = 'button';
+  directoryButton.addEventListener('click', () => adminWorkspace.directory());
+  document.querySelector('.product-nav nav').append(directoryButton);
   renderCoverage();
   renderSummaryCards();
   renderPinnedObjects();
@@ -2817,13 +3307,7 @@
   requestWorker('initialise', { nodes: report.nodes, edges: report.edges, observedAt: report.manifest.generatedAtUtc })
     .then(updateSearch)
     .then(() => {
-      const preferredNode = report.nodes.find((node) => node.DisplayName === 'Mark Oldham') || report.nodes[0];
-      if (preferredNode) {
-        selectNode(preferredNode.Key);
-        if (['user', 'guestUser'].includes(preferredNode.Kind)) {
-          return explainSelectedAccess();
-        }
-      }
+      setActiveView('overview');
       return null;
     })
     .catch((error) => {

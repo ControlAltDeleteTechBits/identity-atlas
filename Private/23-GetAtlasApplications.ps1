@@ -30,7 +30,7 @@ function Get-AtlasApplication {
         }
     }
 
-    $servicePrincipalsEndpoint = '/v1.0/servicePrincipals?$select=id,appId,displayName,servicePrincipalType,accountEnabled,appOwnerOrganizationId,appRoles'
+    $servicePrincipalsEndpoint = '/v1.0/servicePrincipals?$select=id,appId,displayName,servicePrincipalType,accountEnabled,appOwnerOrganizationId,appRoles,oauth2PermissionScopes,preferredSingleSignOnMode,preferredTokenSigningKeyThumbprint,keyCredentials'
     $applicationsEndpoint = '/v1.0/applications?$select=id,appId,displayName,signInAudience,createdDateTime,passwordCredentials,keyCredentials,requiredResourceAccess'
     try {
         $servicePrincipalResponse = Invoke-AtlasGraphRequest -Uri $servicePrincipalsEndpoint
@@ -88,6 +88,22 @@ function Get-AtlasApplication {
             accountEnabled = $servicePrincipal.accountEnabled
             appOwnerOrganizationId = $servicePrincipal.appOwnerOrganizationId
             appRoleCount = $appRoles.Count
+            appRoles = $appRoles
+            oauth2PermissionScopes = @(Get-AtlasResponseProperty -InputObject $servicePrincipal -Name 'oauth2PermissionScopes')
+            preferredSingleSignOnMode = Get-AtlasResponseProperty -InputObject $servicePrincipal -Name 'preferredSingleSignOnMode'
+            preferredTokenSigningKeyThumbprint = Get-AtlasResponseProperty -InputObject $servicePrincipal -Name 'preferredTokenSigningKeyThumbprint'
+            signingCertificates = @(@(Get-AtlasResponseProperty -InputObject $servicePrincipal -Name 'keyCredentials') | Where-Object { $null -ne $_ } | ForEach-Object {
+                # Retain metadata only, never key material or credential values.
+                @{
+                    keyId = Get-AtlasResponseProperty -InputObject $_ -Name 'keyId'
+                    displayName = Get-AtlasResponseProperty -InputObject $_ -Name 'displayName'
+                    usage = Get-AtlasResponseProperty -InputObject $_ -Name 'usage'
+                    type = Get-AtlasResponseProperty -InputObject $_ -Name 'type'
+                    startDateTime = Get-AtlasResponseProperty -InputObject $_ -Name 'startDateTime'
+                    endDateTime = Get-AtlasResponseProperty -InputObject $_ -Name 'endDateTime'
+                    customKeyIdentifier = Get-AtlasResponseProperty -InputObject $_ -Name 'customKeyIdentifier'
+                }
+            })
         } -Source @{
             provider = 'microsoftGraph'
             apiVersion = 'v1.0'
@@ -438,6 +454,10 @@ function Get-AtlasApplication {
         }
     }
 
+    $adminMetrics = Add-AtlasApplicationAdminDetail -Result $result -BatchSize $BatchSize
+    $servicePrincipalResponse.Metrics.requestCount += $adminMetrics.requestCount
+    $servicePrincipalResponse.Metrics.retryCount += $adminMetrics.retryCount
+    $applicationLogicalRequestCount += $adminMetrics.logicalRequestCount
     $result.Metrics = @{
         servicePrincipalCount = $servicePrincipalResponse.Items.Count
         applicationCount = $applicationResponse.Items.Count

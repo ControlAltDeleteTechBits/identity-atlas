@@ -161,6 +161,8 @@ foreach ($file in $candidateFiles) {
 
         foreach ($emailMatch in $emailPattern.Matches($line)) {
             $email = $emailMatch.Value.ToLowerInvariant()
+            # Graph expanded-collection annotation, not an email address. Match only the quoted property argument.
+            if ($email -eq 'rules@odata.nextlink' -and $line -match "-Name 'rules@odata.nextLink'") { continue }
             if ($email -notin $approvedPublicEmails -and -not $email.EndsWith('.example')) {
                 Add-AtlasReleaseFinding -Category 'Unapproved email address' -RelativePath $relativePath -LineNumber $lineNumber
             }

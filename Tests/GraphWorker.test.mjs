@@ -18,6 +18,310 @@ function loadUiFunction(name, nextName, bindings = {}) {
   return vm.runInNewContext(`${source.slice(start, end)}; ${name}`, bindings);
 }
 
+function groupDependencyModel(edges, extraNodes = [], evidence = []) {
+  const outgoing = new Map();
+  const incoming = new Map();
+  for (const edge of edges) {
+    if (!outgoing.has(edge.From)) outgoing.set(edge.From, []);
+    if (!incoming.has(edge.To)) incoming.set(edge.To, []);
+    outgoing.get(edge.From).push(edge);
+    incoming.get(edge.To).push(edge);
+  }
+  return loadUiFunction('collectGroupDependencies', 'renderGroupDependenciesSection', {
+    outgoing, incoming,
+    nodesByKey: new Map([{ Key: 'group', Kind: 'group' }, ...extraNodes].map((node) => [node.Key, node])),
+    evidenceByKey: new Map(evidence.map((item) => [item.Key, item])),
+    report: { manifest: { generatedAtUtc: '2026-09-10T00:00:00Z' } }
+  });
+}
+
+function analysisFixture() {
+  const node = (Key, Kind, Properties = {}) => ({ Key, Id: Key, Kind, DisplayName: Key, Status: 'complete', Properties });
+  return { manifest: { tenant: { id: 'test-only' }, schemaVersion: '1.1.0', generatedAtUtc: '2026-09-10T12:00:00Z', coverage: { status: 'complete', collectors: [{ name: 'all', status: 'complete', metrics: { collectionStartedAtUtc: '2026-09-10T11:00:00Z', collectionCompletedAtUtc: '2026-09-10T11:30:00Z' } }] } },
+    nodes: [node('user', 'user', { department: 'Finance', accountEnabled: true }), node('group', 'group'), node('app', 'servicePrincipal', { appId: 'api' }), node('role', 'roleDefinition'), node('review', 'accessReviewInstance')],
+    edges: [], evidence: [{ Key: 'proof', Completeness: 'complete' }] };
+}
+const analysisEdge = (Key, From, To, Relationship, State = {}) => ({ Key, From, To, Relationship, State, EvidenceIds: ['proof'] });
+function analyse(snapshot) {
+  return loadUiFunction('createAccessAnalysis', 'renderAnalysisValue', {})(snapshot);
+}
+
+test('access removal matches exact entitlements and retains alternative and eligible paths', () => {
+  const before = analysisFixture(); before.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  before.edges = [analysisEdge('direct', 'user', 'app', 'assignedAppRole', { appRoleId: 'reader' }), analysisEdge('member', 'user', 'group', 'memberOf'), analysisEdge('via', 'group', 'app', 'assignedAppRole', { appRoleId: 'reader' })];
+  const after = structuredClone(before); after.manifest.generatedAtUtc = '2026-09-10T12:00:00Z'; after.edges.shift();
+  let result = analyse(after).compare(before, 'user');
+  assert.equal(result.conclusions[0].result, 'Collected path removed');
+  assert.equal(result.conclusions[0].alternatives.length, 1);
+  after.edges[0].Relationship = 'pimEligibleMember';
+  result = analyse(after).compare(before, 'user');
+  assert.equal(result.conclusions[0].eligible.length, 1);
+  after.edges[1].State.appRoleId = 'writer';
+  assert.equal(analyse(after).compare(before, 'user').conclusions[0].eligible.length, 0);
+  assert.match(result.caveat, /sessions ended/);
+});
+
+test('partial coverage and missing evidence prevent removal confirmation', () => {
+  const before = analysisFixture(); before.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  before.edges = [analysisEdge('direct', 'user', 'app', 'assignedAppRole', { appRoleId: 'reader' })];
+  const after = analysisFixture(); after.manifest.coverage.status = 'partial';
+  assert.match(analyse(after).compare(before, 'user').conclusions[0].result, /Unable/);
+  after.manifest.coverage.status = 'complete'; before.evidence = [];
+  assert.match(analyse(after).compare(before, 'user').conclusions[0].result, /Unable/);
+});
+
+test('comparison refuses wrong tenant schema and reversed or invalid timestamps', () => {
+  const before = analysisFixture(); const after = analysisFixture();
+  assert.throws(() => analyse(after).compare(before, 'user'), /earlier/);
+  before.manifest.generatedAtUtc = 'invalid'; assert.throws(() => analyse(after).compare(before, 'user'), /earlier/);
+  before.manifest.tenant.id = 'other'; assert.throws(() => analyse(after).compare(before, 'user'), /tenant/);
+  before.manifest.tenant.id = 'test-only'; before.manifest.schemaVersion = 'other'; assert.throws(() => analyse(after).compare(before, 'user'), /schemas/);
+});
+
+test('review results require application time and observed removal; pending never confirms removal', () => {
+  const before = analysisFixture(); before.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  before.edges = [analysisEdge('direct', 'user', 'group', 'memberOf')];
+  const after = analysisFixture();
+  const decision = analysisEdge('decision', 'user', 'review', 'reviewedInAccessReview', { decision: 'Deny', resourceId: 'group', applyResult: 'NotApplied' });
+  after.edges = [decision];
+  assert.equal(analyse(after).reviews(before, 'user')[0].result, 'Decision pending application');
+  decision.State.applyResult = 'AppliedSuccessfully';
+  assert.equal(analyse(after).reviews(before, 'user')[0].result, 'Unable to verify');
+  decision.State.appliedDateTime = '2026-09-10T10:00:00Z';
+  assert.equal(analyse(after).reviews(before, 'user')[0].result, 'Reviewed path removed');
+  after.manifest.coverage.status = 'partial';
+  assert.equal(analyse(after).reviews(before, 'user')[0].result, 'Unable to verify');
+});
+
+test('dynamic explanation uses supported grammar and distinguishes observation from calculation', () => {
+  const fixture = analysisFixture();
+  fixture.nodes[1].Properties.membershipRule = '(user.department -eq "finance") -and (user.accountEnabled -eq true)';
+  let result = analyse(fixture).dynamic('group', 'user');
+  assert.equal(result.result, 'Calculated match'); assert.equal(result.observed, false); assert.equal(result.conditions.length, 2);
+  fixture.nodes[0].Properties.accountEnabled = false;
+  assert.equal(analyse(fixture).dynamic('group', 'user').result, 'Calculated non-match');
+  delete fixture.nodes[0].Properties.accountEnabled;
+  assert.match(analyse(fixture).dynamic('group', 'user').result, /missing attributes/);
+  fixture.nodes[1].Properties.membershipRule = 'user.department -match "Finance"';
+  assert.match(analyse(fixture).dynamic('group', 'user').result, /unsupported/);
+  fixture.nodes[1].Properties.membershipRule = 'globalThis.compromised=true';
+  assert.match(analyse(fixture).dynamic('group', 'user').result, /unsupported/);
+});
+
+test('PIM analysis never labels activation as standing and requires matching scope for conflicts', () => {
+  const fixture = analysisFixture();
+  fixture.edges = [analysisEdge('eligible', 'user', 'role', 'eligibleRole', { directoryScopeId: '/' }), analysisEdge('active', 'user', 'role', 'assignedRole', { directoryScopeId: '/', scheduleInstances: [{ assignmentType: 'Activated' }] })];
+  assert.equal(analyse(fixture).pim('role').alternatives.length, 0);
+  assert.equal(analyse(fixture).pim('role').rows[1].category, 'PIM activation');
+  fixture.edges[1].State.scheduleInstances[0].assignmentType = 'Assigned';
+  assert.equal(analyse(fixture).pim('role').alternatives.length, 1);
+  fixture.edges[1].State.directoryScopeId = '/administrativeUnits/example';
+  assert.equal(analyse(fixture).pim('role').alternatives.length, 0);
+  assert.equal(analyse(fixture).pim('role').requirements.length, 0);
+});
+
+test('group membership preview separates removal from Conditional Access exclusion effects', () => {
+  const fixture = analysisFixture(); fixture.nodes.push({ Key: 'policy', Id: 'policy', Kind: 'conditionalAccessPolicy', Status: 'complete', Properties: {} });
+  fixture.edges = [analysisEdge('member', 'user', 'group', 'memberOf'), analysisEdge('grant', 'group', 'app', 'assignedAppRole', { appRoleId: 'reader' }), analysisEdge('exclude', 'group', 'policy', 'conditionalAccessExcludes')];
+  const result = analyse(fixture).preview('group', 'member');
+  assert.equal(result.removed.length, 2);
+  assert.equal(result.remaining.length, 0);
+  assert.match(result.policyChanges[0].consequence, /exclusion/);
+  assert.equal(fixture.edges.length, 3);
+  assert.throws(() => analyse(fixture).preview('group', 'grant'), /membership/);
+});
+
+test('permission dossier matches IDs and permission type and preserves consent audience', () => {
+  const fixture = analysisFixture();
+  fixture.nodes.push({ Key: 'registration', Kind: 'application', Properties: { appId: 'client' } }, { Key: 'client', Kind: 'servicePrincipal', Properties: { appId: 'client' } }, { Key: 'requested', Kind: 'apiPermission', Properties: { resourceAppId: 'api', resourceAccessId: 'permission', permissionType: 'Scope' } });
+  fixture.nodes[2].Properties.oauth2PermissionScopes = [{ id: 'permission', value: 'Read.Example', adminConsentDescription: 'Read authorised example resources' }];
+  fixture.edges = [analysisEdge('request', 'registration', 'requested', 'requiresApiPermission'), analysisEdge('grant', 'client', 'consent', 'hasDelegatedConsent', { resourceId: 'app', scope: 'Read.Example', consentType: 'Principal', principalId: 'user' })];
+  const result = analyse(fixture).dossier('client');
+  assert.equal(result.requested[0].result, 'Matching collected grant');
+  assert.match(result.grants[0].consent, /Individual-user/);
+  fixture.nodes.at(-1).Properties.permissionType = 'Role';
+  assert.match(analyse(fixture).dossier('client').requested[0].result, /No matching/);
+});
+
+test('unsupported requested permission types remain unevaluated', () => {
+  const fixture = analysisFixture();
+  fixture.nodes.push({ Key: 'registration', Kind: 'application', Properties: { appId: 'api' } }, { Key: 'permission', Kind: 'apiPermission', Properties: { permissionType: 'Role,Scope', resourceAppId: 'api', resourceAccessId: 'read' } });
+  fixture.edges.push(analysisEdge('request', 'registration', 'permission', 'requiresApiPermission'));
+  const request = analyse(fixture).dossier('registration').requested[0];
+  assert.equal(request.permissionType, 'Role,Scope');
+  assert.match(request.result, /Unevaluated: unsupported/);
+});
+
+test('export serialisation removes fills and builds self-contained safe icon geometry', () => {
+  const source = fs.readFileSync(path.join(projectRoot, 'Web/assets/app.js'), 'utf8');
+  const exportCode = source.slice(source.indexOf('  async function currentGraphSvgContent('), source.indexOf('  async function exportCurrentSvg('));
+  assert.match(exportCode, /\.graph-edge \{ fill: none;/);
+  assert.match(exportCode, /allowed\.has\(href\)/);
+  assert.match(exportCode, /image\.replaceWith\(icon\)/);
+  assert.match(exportCode, /clean\.setAttribute\('d'/);
+  assert.doesNotMatch(exportCode, /innerHTML|importNode/);
+});
+
+test('baseline state remains in memory with explicit clear and load race protection', () => {
+  const source = fs.readFileSync(path.join(projectRoot, 'Web/assets/app.js'), 'utf8');
+  const code = source.slice(source.indexOf('  function renderAccessAnalysisSection('), source.indexOf('  function renderObjectDetails('));
+  assert.match(code, /renderBaseline\(\);/);
+  assert.match(code, /accessBaseline = null/);
+  assert.match(code, /sequence !== baselineLoadSequence/);
+  assert.match(code, /Incomplete collectors:/);
+  assert.doesNotMatch(code, /localStorage|sessionStorage/);
+});
+
+test('baseline loads persist across object renders and clear without browser storage', async () => {
+  const made = [];
+  const makeElement = (tag, cls, text = '') => {
+    const element = { tag, textContent: text, children: [], events: {}, append(...items) { this.children.push(...items); }, before() {}, setAttribute() {}, replaceChildren(...items) { this.children = items; }, addEventListener(name, handler) { this.events[name] = handler; } };
+    made.push(element); return element;
+  };
+  const snapshot = analysisFixture();
+  const previous = structuredClone(snapshot); previous.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  const context = { accessBaseline: null, baselineLoadSequence: 0, accessAnalysis: analyse(snapshot), report: snapshot, nodesByKey: new Map(snapshot.nodes.map(n => [n.Key,n])), outgoing: new Map(), incoming: new Map(), selectedKey: 'user', makeElement, renderAnalysisValue: value => ({ value }), renderObjectDetails() {} };
+  const render = loadUiFunction('renderAccessAnalysisSection', 'renderObjectDetails', context);
+  render(snapshot.nodes[0]);
+  const input = made.find(e => e.tag === 'input');
+  input.files = [{name: 'baseline.json', size: 100, text: async () => JSON.stringify(previous)}];
+  await input.events.change();
+  assert.equal(context.accessBaseline.name, 'baseline.json');
+  made.length = 0; render(snapshot.nodes[0]);
+  assert.ok(made.some(e => e.textContent.includes('Loaded: baseline.json')));
+  const nextInput = made.find(e => e.tag === 'input');
+  nextInput.files = [{name:'bad.json',size:10,text:async()=>'{bad'}];
+  await nextInput.events.change();
+  assert.equal(context.accessBaseline.name, 'baseline.json');
+  made.find(e => e.textContent === 'Clear baseline').events.click();
+  assert.equal(context.accessBaseline, null);
+});
+
+test('stale checkpoint timing and absent collection timing cannot confirm removals', () => {
+  const before = analysisFixture(); before.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  before.edges = [analysisEdge('direct', 'user', 'group', 'memberOf')];
+  const after = analysisFixture();
+  after.manifest.coverage.collectors[0].metrics.collectionStartedAtUtc = '2026-09-08T12:00:00Z';
+  assert.equal(analyse(after).compare(before, 'user').verified, false);
+  delete after.manifest.coverage.collectors[0].metrics;
+  assert.equal(analyse(after).compare(before, 'user').verified, false);
+});
+
+test('bounded path search reports truncation and never confirms an absent route', () => {
+  const before = analysisFixture(); before.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  before.edges = [analysisEdge('direct', 'user', 'group', 'memberOf')];
+  const after = analysisFixture();
+  after.edges = Array.from({ length: 5100 }, (_, i) => analysisEdge(String(i), 'user', 'app', 'ownedBy'));
+  const result = analyse(after).compare(before, 'user');
+  assert.equal(result.truncated, true);
+  assert.equal(result.verified, false);
+});
+
+test('PIM group activation is not mistaken for a standing group route', () => {
+  const fixture = analysisFixture();
+  fixture.edges = [analysisEdge('eligible', 'user', 'role', 'eligibleRole', { directoryScopeId: '/' }), analysisEdge('membership', 'user', 'group', 'memberOf'), analysisEdge('pim', 'user', 'group', 'pimActiveMember'), analysisEdge('role', 'group', 'role', 'assignedRole', { directoryScopeId: '/', scheduleInstances: [{ assignmentType: 'Assigned' }] })];
+  assert.equal(analyse(fixture).pim('role').alternatives.length, 0);
+});
+
+test('review application failures and ambiguous app permissions remain unverified', () => {
+  const before = analysisFixture(); before.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  before.edges = ['one', 'two'].map(id => analysisEdge(id, 'user', 'app', 'assignedAppRole', { appRoleId: id }));
+  const after = analysisFixture(); after.edges = [analysisEdge('review', 'user', 'review', 'reviewedInAccessReview', { resourceId: 'app', decision: 'Deny', applyResult: 'AppliedSuccessfully', appliedDateTime: '2026-09-10T10:00:00Z' })];
+  assert.equal(analyse(after).reviews(before, 'user')[0].result, 'Unable to verify');
+  after.edges[0].State.applyResult = 'AppliedWithUnknownFailure';
+  assert.equal(analyse(after).reviews(before, 'user')[0].result, 'Unable to verify');
+});
+
+test('expired and invalid assignment schedules cannot appear as current alternatives', () => {
+  const fixture = analysisFixture();
+  fixture.edges = [analysisEdge('role', 'user', 'role', 'assignedRole', { directoryScopeId: '/', scheduleInstances: [{ assignmentType: 'Activated', endDateTime: '2026-09-01T00:00:00Z' }] })];
+  assert.equal(analyse(fixture).routes('user').paths[0].type, 'Expired');
+  fixture.edges[0].State.scheduleInstances[0].endDateTime = 'bad';
+  assert.equal(analyse(fixture).routes('user').paths[0].type, 'Unknown timing');
+});
+
+test('PIM policy explanation separates activation rules from administrator assignment rules', () => {
+  const fixture = analysisFixture();
+  fixture.nodes[3].Properties.pimPolicies = [{ policyId: 'policy', scopeId: '/', evidenceId: 'proof', rules: [
+    { id: 'Approval_EndUser_Assignment', target: { caller: 'EndUser', level: 'Assignment' }, setting: { isApprovalRequired: true } },
+    { id: 'Expiration_EndUser_Assignment', target: { caller: 'EndUser', level: 'Assignment' }, maximumDuration: 'PT2H' },
+    { id: 'Expiration_Admin_Assignment', target: { caller: 'Admin', level: 'Assignment' }, maximumDuration: 'P365D' }
+  ] }];
+  const result = analyse(fixture).pim('role').requirements[0];
+  assert.equal(result.activationRules.length, 2);
+  assert.equal(result.activationRules[0].approval, true);
+  assert.equal(result.activationRules[1].maximumDuration, 'PT2H');
+});
+
+test('review updates replace earlier pending states even when edge identity changes', () => {
+  const before = analysisFixture(); before.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  before.edges = [analysisEdge('old', 'user', 'review', 'reviewedInAccessReview', { decisionId: 'decision', resourceId: 'group', decision: 'Deny', applyResult: 'New' }), analysisEdge('member', 'user', 'group', 'memberOf')];
+  const after = analysisFixture(); after.edges = [analysisEdge('new', 'user', 'review', 'reviewedInAccessReview', { decisionId: 'decision', resourceId: 'group', decision: 'Deny', applyResult: 'AppliedSuccessfully', appliedDateTime: '2026-09-10T10:00:00Z' })];
+  const results = analyse(after).reviews(before, 'user');
+  assert.equal(results.length, 1);
+  assert.equal(results[0].result, 'Reviewed path removed');
+});
+
+test('membership removal retains eligible PIM membership of the same group', () => {
+  const before = analysisFixture(); before.manifest.generatedAtUtc = '2026-09-09T12:00:00Z';
+  before.edges = [analysisEdge('member', 'user', 'group', 'memberOf')];
+  const after = analysisFixture(); after.edges = [analysisEdge('eligible', 'user', 'group', 'pimEligibleMember')];
+  const result = analyse(after).compare(before, 'user');
+  assert.equal(result.conclusions[0].eligible.length, 1);
+  assert.equal(result.conclusions[0].alternatives.length, 0);
+});
+
+test('group dependencies separate assignment inclusion exclusion and ownership evidence', () => {
+  const relations = ['assignedRole', 'eligibleRole', 'assignedAppRole', 'conditionalAccessIncludes', 'conditionalAccessExcludes', 'pimActiveOwner', 'pimEligibleMember', 'coveredByAccessReview', 'grantsEntitlementResourceRole'];
+  const edges = relations.map((relationship, i) => ({ Key: String(i), From: i >= 5 && i !== 7 ? 'other' : 'group', To: i >= 5 && i !== 7 ? 'group' : 'other', Relationship: relationship, EvidenceIds: ['proof'] }));
+  const result = groupDependencyModel(edges, [{ Key: 'other', Kind: 'user', DisplayName: '<script>hostile</script>' }], [{ Key: 'proof', Completeness: 'complete' }])('group');
+  assert.equal(result.categories.assignments.items.length, 3);
+  assert.equal(result.categories.inclusions.items.length, 1);
+  assert.equal(result.categories.exclusions.items.length, 1);
+  assert.equal(result.categories.membership.items.length, 2);
+  assert.equal(result.categories.governance.items.length, 2);
+  assert.equal(result.categories.membership.items[0].direction, 'Incoming');
+  assert.equal(result.categories.assignments.items[0].evidenceComplete, true);
+  assert.equal(result.categories.assignments.items[0].relatedName, '<script>hostile</script>');
+});
+
+test('group dependency absence and unresolved references never manufacture evidence', () => {
+  const collect = groupDependencyModel([{ Key: 'missing', From: 'group', To: 'absent', Relationship: 'assignedRole', EvidenceIds: ['unknown'] }]);
+  assert.equal(collect('group').categories.assignments.items[0].evidenceComplete, false);
+  assert.equal(collect('unknown'), null);
+  assert.equal(groupDependencyModel([])('group').total, 0);
+});
+
+test('group dependency inspection is bounded and does not follow nested assignments', () => {
+  const edges = Array.from({ length: 600 }, (_, i) => ({ Key: String(i), From: 'child' + i, To: 'group', Relationship: 'memberOf' }));
+  edges.push({ Key: 'parent', From: 'group', To: 'parent', Relationship: 'memberOf' }, { Key: 'role', From: 'parent', To: 'role', Relationship: 'assignedRole' });
+  const result = groupDependencyModel(edges)('group');
+  assert.equal(result.total, 601);
+  assert.equal(result.examined, 500);
+  assert.equal(result.truncated, true);
+  assert.equal(result.categories.assignments.items.length, 0);
+});
+
+test('group dependency categories preserve unknown relationship types as context', () => {
+  const collect = groupDependencyModel([{ Key: 'edge', From: 'group', To: 'other', Relationship: 'futureRelationship', EvidenceIds: [] }]);
+  assert.equal(collect('group').categories.context.items.length, 1);
+  assert.equal(collect('group', Number.NaN).examined, 1);
+});
+
+test('group dependency renderer uses text nodes and exposes coverage and exclusion warnings', () => {
+  const model = groupDependencyModel([{ Key: 'edge', From: 'group', To: 'policy', Relationship: 'conditionalAccessExcludes', EvidenceIds: ['missing'] }], [{ Key: 'policy', Kind: 'conditionalAccessPolicy', DisplayName: '<img onerror=alert(1)>' }]);
+  const makeElement = (tag, className, text) => ({ tag, text, children: [], append(...children) { this.children.push(...children); } });
+  const render = loadUiFunction('renderGroupDependenciesSection', 'renderObjectDetails', {
+    collectGroupDependencies: model, makeElement, formatRelationship: (value) => value,
+    nodesByKey: new Map(), evidenceByKey: new Map(), openNodeButton: () => { throw new Error('Unresolved object must not link'); }
+  });
+  const result = JSON.stringify(render({ Key: 'group' }));
+  assert.match(result, /Dependencies outside collection coverage are unknown/);
+  assert.match(result, /A sign-in outcome is not evaluated/);
+  assert.match(result, /<img onerror=alert\(1\)>/);
+  assert.doesNotMatch(result, /innerHTML/);
+});
+
 test('authentication findings exclude denied failed skipped partial and legacy unknown collection', () => {
   const statuses = ['empty', 'complete', 'accessDenied', 'failed', 'partial', 'skipped', 'notCollected', 'future-status'];
   const nodes = statuses.map((status) => ({ Key: status, Kind: 'user', Status: 'complete', Properties: {} }));

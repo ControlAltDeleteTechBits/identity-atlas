@@ -65,6 +65,8 @@ if (-not $SkipTests) {
     if ($LASTEXITCODE -ne 0) {
         throw 'JavaScript syntax validation failed.'
     }
+    & $NodePath --check (Join-Path $projectRoot 'Web/assets/admin-workspace.js')
+    if ($LASTEXITCODE -ne 0) { throw 'Admin workspace JavaScript syntax validation failed.' }
 
     $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
     $workerTestRoot = [System.IO.Path]::GetFullPath(
@@ -86,7 +88,7 @@ if (-not $SkipTests) {
         } (Join-Path $projectRoot 'Tests/Fixtures/Get-AtlasTestData.ps1') $workerTestRoot
 
         $env:IDENTITY_ATLAS_TEST_REPORT = Join-Path $workerTestRoot 'data/report.json'
-        & $NodePath --test (Join-Path $projectRoot 'Tests/GraphWorker.test.mjs')
+        & $NodePath --test (Join-Path $projectRoot 'Tests/GraphWorker.test.mjs') (Join-Path $projectRoot 'Tests/AdminWorkspace.test.mjs')
         if ($LASTEXITCODE -ne 0) {
             throw 'The graph worker test suite failed.'
         }

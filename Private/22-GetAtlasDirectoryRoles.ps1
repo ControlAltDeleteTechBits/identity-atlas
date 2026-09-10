@@ -19,9 +19,11 @@ function Get-AtlasDirectoryRole {
         }
     }
 
-    $definitionsEndpoint = '/v1.0/roleManagement/directory/roleDefinitions?$select=id,displayName,description,isBuiltIn,isEnabled'
-    $assignmentsEndpoint = '/v1.0/roleManagement/directory/roleAssignments?$select=id,principalId,roleDefinitionId,directoryScopeId'
-    $eligibilityEndpoint = '/v1.0/roleManagement/directory/roleEligibilityScheduleInstances?$select=id,principalId,roleDefinitionId,directoryScopeId,startDateTime,endDateTime,memberType'
+    $definitionsEndpoint = '/v1.0/roleManagement/directory/roleDefinitions?$select=id,displayName,description,isBuiltIn,isEnabled,rolePermissions'
+    # The directory provider rejects selecting appScopeId in some tenants.
+    # Read the default assignment representation and retain appScopeId when returned.
+    $assignmentsEndpoint = '/v1.0/roleManagement/directory/roleAssignments'
+    $eligibilityEndpoint = '/v1.0/roleManagement/directory/roleEligibilityScheduleInstances?$select=id,principalId,roleDefinitionId,directoryScopeId,appScopeId,startDateTime,endDateTime,memberType'
     $definitionResponse = Invoke-AtlasGraphRequest -Uri $definitionsEndpoint
     $assignmentResponse = Invoke-AtlasGraphRequest -Uri $assignmentsEndpoint
     try {
@@ -71,6 +73,7 @@ function Get-AtlasDirectoryRole {
             description = Get-AtlasResponseProperty -InputObject $definition -Name 'description'
             isBuiltIn = Get-AtlasResponseProperty -InputObject $definition -Name 'isBuiltIn'
             isEnabled = Get-AtlasResponseProperty -InputObject $definition -Name 'isEnabled'
+            rolePermissions = @(Get-AtlasResponseProperty -InputObject $definition -Name 'rolePermissions')
         } -Source @{
             provider = 'microsoftGraph'
             apiVersion = 'v1.0'
@@ -130,6 +133,7 @@ function Get-AtlasDirectoryRole {
         $eligibilityStartDateTime = Get-AtlasResponseProperty -InputObject $eligibility -Name 'startDateTime'
         $eligibilityEndDateTime = Get-AtlasResponseProperty -InputObject $eligibility -Name 'endDateTime'
         $eligibilityMemberType = Get-AtlasResponseProperty -InputObject $eligibility -Name 'memberType'
+        $eligibilityAppScopeId = Get-AtlasResponseProperty -InputObject $eligibility -Name 'appScopeId'
 
         if ($keyById.ContainsKey($eligibility.principalId)) {
             $principalKey = $keyById[$eligibility.principalId]
@@ -150,6 +154,7 @@ function Get-AtlasDirectoryRole {
             roleDefinitionId = $eligibility.roleDefinitionId
             directoryScopeId = $eligibility.directoryScopeId
             activation = 'eligible'
+            appScopeId = $eligibilityAppScopeId
             startDateTime = $eligibilityStartDateTime
             endDateTime = $eligibilityEndDateTime
             memberType = $eligibilityMemberType
@@ -160,6 +165,7 @@ function Get-AtlasDirectoryRole {
             (New-AtlasEdge -TenantId $TenantId -From $principalKey -To $roleKeyById[$eligibility.roleDefinitionId] -Relationship 'eligibleRole' -State @{
                 assignmentId = $eligibility.id
                 activation = 'eligible'
+                appScopeId = $eligibilityAppScopeId
                 assignment = if ($nodeById.ContainsKey($eligibility.principalId) -and $nodeById[$eligibility.principalId].Kind -eq 'group') {
                     'group'
                 }
@@ -176,14 +182,15 @@ function Get-AtlasDirectoryRole {
         )
     }
 
+    $protectionMetrics = Add-AtlasRoleProtectionEvidence -TenantId $TenantId -Result $result
     $result.Metrics = @{
         roleDefinitionCount = $definitions.Count
         directRoleLookupCount = $lookupCount
         unresolvedRoleDefinitionCount = $unresolvedRoles.Count
         roleAssignmentCount = $assignmentResponse.Items.Count
         roleEligibilityCount = $eligibilityResponse.Items.Count
-        requestCount = $definitionResponse.Metrics.requestCount + $assignmentResponse.Metrics.requestCount + $eligibilityResponse.Metrics.requestCount + $lookupRequests
-        retryCount = $definitionResponse.Metrics.retryCount + $assignmentResponse.Metrics.retryCount + $eligibilityResponse.Metrics.retryCount + $lookupRetries
+        requestCount = $definitionResponse.Metrics.requestCount + $assignmentResponse.Metrics.requestCount + $eligibilityResponse.Metrics.requestCount + $lookupRequests + $protectionMetrics.requestCount
+        retryCount = $definitionResponse.Metrics.retryCount + $assignmentResponse.Metrics.retryCount + $eligibilityResponse.Metrics.retryCount + $lookupRetries + $protectionMetrics.retryCount
     }
     return $result
 }
